@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"reflect"
 	"regexp"
 	"strings"
@@ -15,6 +16,12 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
+
+// queryEscape URL-encodes a query string value for the PI Web API, so paths and names containing characters such
+// as '#', '&', '+', '%' or spaces are not cut or altered. Spaces are encoded as %20 rather than '+'.
+func queryEscape(s string) string {
+	return strings.ReplaceAll(url.QueryEscape(s), "+", "%20")
+}
 
 func replaceAccentsWithEscape(s string) string {
 	// Define a mapping of accents to their corresponding escape sequences

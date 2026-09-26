@@ -82,6 +82,7 @@
   - fixed queries overwriting the template variables saved in the panel
 - Fixed backend panics on queries without the optional `recordedValues` or `summary` settings, and on an invalid regex - issue #209
 - Attributes and PI points are read from the query target when the query has no attributes list (API calls, hand-written queries) - issue #209
+- Fixed AF elements, attributes and PI points with `#`, `&`, `+`, `%` or spaces in their names not returning data; calculation expressions and event frame filters are encoded too - issue #186
 - Minimum supported Grafana version is now 11.6.0; tested against Grafana 11.6, 12.x and 13.x
 - Updated plugin scaffolding to `@grafana/create-plugin` 7.11 (dynamic public path, subresource integrity, ESLint 9)
 - Updated frontend packages to `@grafana/*` 12.x

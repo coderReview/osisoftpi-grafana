@@ -610,7 +610,7 @@ func (q Query) getQueryBaseURL() string {
 				uri += "/recorded" + q.getTimeRangeURIComponent()
 			}
 		}
-		uri += "&expression=" + q.Pi.Expression + "&webId="
+		uri += "&expression=" + queryEscape(q.Pi.Expression) + "&webId="
 		log.DefaultLogger.Debug("Calculation log", "uri", uri)
 	} else {
 		uri += "streamsets"

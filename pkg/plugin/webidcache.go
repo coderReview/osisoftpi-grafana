@@ -126,11 +126,11 @@ func (d *Datasource) getCachedWebID(path string) *WebIDCacheEntry {
 func (d *Datasource) getRequestWebId(path string, isPiPoint bool) string {
 	uri := ""
 	if isPiPoint {
-		uri = `points?selectedFields=WebId;Name;Path;PointType;DigitalSetName;Descriptor;EngineeringUnits&path=\\`
-		uri += strings.Replace(strings.Replace(path, "|", `\`, -1), ";", `\`, -1)
+		uri = `points?selectedFields=WebId;Name;Path;PointType;DigitalSetName;Descriptor;EngineeringUnits&path=`
+		uri += queryEscape(`\\` + strings.Replace(strings.Replace(path, "|", `\`, -1), ";", `\`, -1))
 	} else {
-		uri = `attributes?selectedFields=WebId;Name;Path;Type;DigitalSetName;Description;DefaultUnitsName&path=\\`
-		uri += path
+		uri = `attributes?selectedFields=WebId;Name;Path;Type;DigitalSetName;Description;DefaultUnitsName&path=`
+		uri += queryEscape(`\\` + path)
 	}
 	return uri
 }

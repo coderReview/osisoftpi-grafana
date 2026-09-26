@@ -16,6 +16,7 @@ import { getTemplateSrv, TemplateSrv, DataSourceWithBackend } from '@grafana/run
 
 import { PIWebAPIQuery, PIWebAPIDataSourceJsonData, PiDataServer, PiwebapiRsp } from './types';
 import {
+  buildQueryString,
   firstVariableValue,
   formatVariableValue,
   getSummaryTypes,
@@ -168,7 +169,7 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
         .getDatabase(query.path)
         .then((db) =>
           ds.getDatabaseElements(db.WebId ?? '', {
-            selectedFields: 'Items.WebId%3BItems.Name%3BItems.Items%3BItems.Path%3BItems.HasChildren',
+            selectedFields: 'Items.WebId;Items.Name;Items.Items;Items.Path;Items.HasChildren',
           })
         )
         .then(metricQueryTransform);
@@ -177,8 +178,7 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
         .getElement(query.path)
         .then((element) =>
           ds.getElements(element.WebId ?? '', {
-            selectedFields:
-              'Items.Description%3BItems.WebId%3BItems.Name%3BItems.Items%3BItems.Path%3BItems.HasChildren',
+            selectedFields: 'Items.Description;Items.WebId;Items.Name;Items.Items;Items.Path;Items.HasChildren',
             nameFilter: query.filter,
           })
         )
@@ -189,8 +189,7 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
         .then((element) =>
           ds.getAttributes(element.WebId ?? '', {
             searchFullHierarchy: 'true',
-            selectedFields:
-              'Items.Type%3BItems.DefaultUnitsName%3BItems.Description%3BItems.WebId%3BItems.Name%3BItems.Path',
+            selectedFields: 'Items.Type;Items.DefaultUnitsName;Items.Description;Items.WebId;Items.Name;Items.Path',
             nameFilter: query.filter,
             maxCount: query.max,
           })
@@ -397,7 +396,7 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
     if (!name) {
       return Promise.resolve({});
     }
-    return this.restGet('/dataservers?name=' + name).then((response) => response);
+    return this.restGet('/dataservers' + buildQueryString({ name })).then((response) => response);
   }
   // Get a list of all asset (AF) servers
   private getAssetServers(): Promise<PiwebapiRsp[]> {
@@ -407,13 +406,13 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
     if (!name) {
       return Promise.resolve({});
     }
-    return this.restGet('/assetservers?path=\\\\' + name).then((response) => response);
+    return this.restGet('/assetservers' + buildQueryString({ path: '\\\\' + name })).then((response) => response);
   }
   getDatabase(path: string | undefined): Promise<PiwebapiRsp> {
     if (!path) {
       return Promise.resolve({});
     }
-    return this.restGet('/assetdatabases?path=\\\\' + path).then((response) => response);
+    return this.restGet('/assetdatabases' + buildQueryString({ path: '\\\\' + path })).then((response) => response);
   }
   getDatabases(serverId: string, options?: any): Promise<PiwebapiRsp[]> {
     if (!serverId) {
@@ -425,14 +424,17 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
     if (!path) {
       return Promise.resolve({});
     }
-    return this.restGet('/elements?path=\\\\' + path).then((response) => response);
+    return this.restGet('/elements' + buildQueryString({ path: '\\\\' + path })).then((response) => response);
   }
   getEventFrameTemplates(databaseId: string): Promise<PiwebapiRsp[]> {
     if (!databaseId) {
       return Promise.resolve([]);
     }
     return this.restGet(
-      '/assetdatabases/' + databaseId + '/elementtemplates?selectedFields=Items.InstanceType%3BItems.Name%3BItems.WebId'
+      '/assetdatabases/' +
+        databaseId +
+        '/elementtemplates' +
+        buildQueryString({ selectedFields: 'Items.InstanceType;Items.Name;Items.WebId' })
     ).then((response) => {
       return filter(response.Items ?? [], (item) => item.InstanceType === 'EventFrame');
     });
@@ -442,7 +444,10 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
       return Promise.resolve([]);
     }
     return this.restGet(
-      '/assetdatabases/' + databaseId + '/elementtemplates?selectedFields=Items.InstanceType%3BItems.Name%3BItems.WebId'
+      '/assetdatabases/' +
+        databaseId +
+        '/elementtemplates' +
+        buildQueryString({ selectedFields: 'Items.InstanceType;Items.Name;Items.WebId' })
     ).then((response) => {
       return filter(response.Items ?? [], (item) => item.InstanceType === 'Element');
     });
@@ -468,15 +473,7 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
    * @param {string} options.selectedFields - List of fields to be returned in the response, separated by semicolons (;). If this parameter is not specified, all available fields will be returned. See Selected Fields for more information.
    */
   private getAttributes(elementId: string, options: any): Promise<PiwebapiRsp[]> {
-    let querystring =
-      '?' +
-      map(options, (value, key) => {
-        return key + '=' + value;
-      }).join('&');
-
-    if (querystring === '?') {
-      querystring = '';
-    }
+    const querystring = buildQueryString(options ?? {});
 
     return this.restGet('/elements/' + elementId + '/attributes' + querystring).then(
       (response) => response.Items ?? []
@@ -503,15 +500,7 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
    * @param {string} options.selectedFields -  List of fields to be returned in the response, separated by semicolons (;). If this parameter is not specified, all available fields will be returned. See Selected Fields for more information.
    */
   private getDatabaseElements(databaseId: string, options: any): Promise<PiwebapiRsp[]> {
-    let querystring =
-      '?' +
-      map(options, (value, key) => {
-        return key + '=' + value;
-      }).join('&');
-
-    if (querystring === '?') {
-      querystring = '';
-    }
+    const querystring = buildQueryString(options ?? {});
 
     return this.restGet('/assetdatabases/' + databaseId + '/elements' + querystring).then(
       (response) => response.Items ?? []
@@ -538,15 +527,7 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
    * @param {string} options.selectedFields -  List of fields to be returned in the response, separated by semicolons (;). If this parameter is not specified, all available fields will be returned. See Selected Fields for more information.
    */
   private getElements(elementId: string, options: any): Promise<PiwebapiRsp[]> {
-    let querystring =
-      '?' +
-      map(options, (value, key) => {
-        return key + '=' + value;
-      }).join('&');
-
-    if (querystring === '?') {
-      querystring = '';
-    }
+    const querystring = buildQueryString(options ?? {});
 
     return this.restGet('/elements/' + elementId + '/elements' + querystring).then((response) => response.Items ?? []);
   }
@@ -580,7 +561,9 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
         });
       }
     }
-    return this.restGet('/dataservers/' + serverId + '/points?maxCount=100&nameFilter=' + filter2).then((results) => {
+    return this.restGet(
+      '/dataservers/' + serverId + '/points' + buildQueryString({ maxCount: 100, nameFilter: filter2 })
+    ).then((results) => {
       if (!!results && !!results?.Items) {
         return doFilter ? results.Items.filter((item) => item.Name?.match(filter1)) : results.Items;
       }

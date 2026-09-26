@@ -1,4 +1,4 @@
-import { firstVariableValue, formatVariableValue } from './helper';
+import { buildQueryString, firstVariableValue, formatVariableValue } from './helper';
 
 describe('formatVariableValue', () => {
   it('keeps single values unchanged', () => {
@@ -32,5 +32,18 @@ describe('firstVariableValue', () => {
 
   it('keeps paths without groups', () => {
     expect(firstVariableValue('\\\\AF\\DB\\Site')).toBe('\\\\AF\\DB\\Site');
+  });
+});
+
+describe('buildQueryString', () => {
+  it('encodes AF paths so they are not cut at # or &', () => {
+    const qs = buildQueryString({ path: '\\\\PIServer\\AFName\\Location\\Machine#1&2 + 50%' });
+    expect(qs).toBe('?path=%5C%5CPIServer%5CAFName%5CLocation%5CMachine%231%262%20%2B%2050%25');
+    expect(new URLSearchParams(qs).get('path')).toBe('\\\\PIServer\\AFName\\Location\\Machine#1&2 + 50%');
+  });
+
+  it('skips empty values', () => {
+    expect(buildQueryString({ nameFilter: undefined, maxCount: 100, selectedFields: '' })).toBe('?maxCount=100');
+    expect(buildQueryString({})).toBe('');
   });
 });
