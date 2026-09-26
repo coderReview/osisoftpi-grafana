@@ -123,7 +123,7 @@ func apiBatchRequest(ctx context.Context, d *Datasource, BatchSubRequests interf
 	resp, err := d.httpClient.Do(req)
 	if err != nil {
 		log.DefaultLogger.Error("Batch request - do", "error", err)
-		return nil, fmt.Errorf("request timeout")
+		return nil, fmt.Errorf("request failed: %w", err)
 	}
 
 	defer func() {

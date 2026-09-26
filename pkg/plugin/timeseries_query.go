@@ -205,7 +205,7 @@ func (d *Datasource) batchRequest(ctx context.Context, PIWebAPIQueriesAll []PiPr
 					PIWebAPIQueries[RefID][i].Cached = true
 				} else {
 					PIWebAPIQueries[RefID][i].Error = fmt.Errorf("error during query: %s", err.Error())
-					PIWebAPIQueries[RefID][i].Status = http.StatusGatewayTimeout
+					PIWebAPIQueries[RefID][i].Status = http.StatusBadGateway
 				}
 			}
 		}
@@ -321,7 +321,7 @@ func (d *Datasource) processBatchtoFrames(processedQuery map[string][]PiProcesse
 			// error and the other targets of the query still return their data.
 			if q.Error != nil {
 				backend.Logger.Error("Process batch to frames - Error processing query", "RefID", RefID, "query", q, "hide", q.HideError)
-				if !q.HideError && subResponse.Error == nil && strings.Contains(q.Error.Error(), "api error") {
+				if !q.HideError && subResponse.Error == nil {
 					subResponse.Error = q.Error
 					errorStatus = backend.Status(q.Status)
 				}
