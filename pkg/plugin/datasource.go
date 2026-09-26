@@ -337,6 +337,13 @@ func (d *Datasource) isUsingNewFormat() bool {
 	return d.dataSourceOptions.NewFormat != nil && *d.dataSourceOptions.NewFormat
 }
 
+// isUsingUnits checks whether the datasource is configured to add units defined in PI to data frames.
+// This is determined by the UseUnit option ("Enable Unit From Data") in dataSourceOptions.
+// Returns true if UseUnit is set and enabled; otherwise, false.
+func (d *Datasource) isUsingUnits() bool {
+	return d.dataSourceOptions.UseUnit != nil && *d.dataSourceOptions.UseUnit
+}
+
 // isUsingStreaming checks whether the datasource has streaming enabled in experimental mode.
 // This requires both the UseExperimental and UseStreaming options to be set and enabled.
 // Returns true if both options are enabled; otherwise, false.

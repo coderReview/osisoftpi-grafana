@@ -73,6 +73,7 @@
 ## 6.0.0
 
 - Rebuilt the plugin with current Grafana tooling to fix it failing to load on Grafana 12.3 and later - issue #197
+- Fixed units from PI not being added to data frames when "Enable Unit From Data" and "Use unit from datapoints" are enabled - issue #208
 - Minimum supported Grafana version is now 11.6.0; tested against Grafana 11.6, 12.x and 13.x
 - Updated plugin scaffolding to `@grafana/create-plugin` 7.11 (dynamic public path, subresource integrity, ESLint 9)
 - Updated frontend packages to `@grafana/*` 12.x

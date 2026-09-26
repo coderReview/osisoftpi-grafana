@@ -417,7 +417,8 @@ func getDataLabels(useNewFormat bool, q *PiProcessedQuery, pointType string, des
 func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, SummaryType string) (*data.Frame, error) {
 	items := *processedQuery.Response.getItems(SummaryType)
 	webID := processedQuery.WebID
-	includeMetaData := processedQuery.UseUnit
+	// Units are only added when enabled in both the datasource configuration and the query.
+	includeMetaData := processedQuery.UseUnit && d.isUsingUnits()
 	digitalStates := processedQuery.DigitalStates
 	noDataReplace := processedQuery.getNoDataReplace()
 
@@ -536,18 +537,19 @@ func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, Su
 	valuepointers := convertSliceToPointers(fP.values, fP.badValues)
 
 	timeField := data.NewField(data.TimeSeriesTimeFieldName, nil, fP.timestamps)
+	var fieldConfig *data.FieldConfig
+	if includeMetaData {
+		fieldConfig = getFieldConfig(d.getUnitsForWebID(webID), processedQuery.Response.getUnits(SummaryType),
+			d.getDescriptionForWebID(webID))
+	}
 	if !digitalState || !digitalStates {
 		valueField := data.NewField(frameLabel["name"], labels, valuepointers)
+		valueField.SetConfig(fieldConfig)
 		frame.Fields = append(frame.Fields,
 			timeField,
 			valueField,
 		)
 	} else {
-		fieldConfig := &data.FieldConfig{}
-		if includeMetaData {
-			fieldConfig.Unit = d.getUnitsForWebID(webID)
-			fieldConfig.Description = d.getDescriptionForWebID(webID)
-		}
 		valueField := data.NewField(frameLabel["name"], labels, digitalStateValues)
 		valueField.SetConfig(fieldConfig)
 		frame.Fields = append(frame.Fields,
@@ -563,6 +565,19 @@ func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, Su
 		},
 	}
 	return frame, nil
+}
+
+// getFieldConfig returns the field configuration with the units and description of a PI point or AF attribute.
+// The units come from the WebID metadata (EngineeringUnits or DefaultUnitsName) and fall back to the units
+// returned with the values when the metadata has none.
+func getFieldConfig(units string, responseUnits string, description string) *data.FieldConfig {
+	if strings.TrimSpace(units) == "" {
+		units = responseUnits
+	}
+	return &data.FieldConfig{
+		Unit:        strings.TrimSpace(units),
+		Description: description,
+	}
 }
 
 func getTimeStamp(input reflect.Value) (reflect.Value, error) {
