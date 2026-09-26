@@ -5,6 +5,8 @@ test('smoke: should render config editor', async ({ createDataSourceConfigPage, 
   const ds = await readProvisionedDataSource({ fileName: 'datasources.yml' });
   await createDataSourceConfigPage({ type: ds.type });
   await expect(page.getByPlaceholder('https://server.name/piwebapi')).toBeVisible();
+  await expect(page.getByText('Authentication', { exact: true })).toBeVisible();
+  await expect(page.getByText('Advanced HTTP settings')).toBeVisible();
   await expect(page.getByLabel('Max Cache Time')).toBeVisible();
   await expect(page.getByLabel('AF Server')).toBeVisible();
   await expect(page.getByLabel('AF Database')).toBeVisible();

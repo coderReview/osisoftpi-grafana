@@ -1,6 +1,7 @@
 import React, { ChangeEvent, PureComponent } from 'react';
-import { DataSourceHttpSettings, InlineField, InlineSwitch, Input } from '@grafana/ui';
-import { DataSourcePluginOptionsEditorProps, DataSourceJsonData, DataSourceSettings } from '@grafana/data';
+import { Divider, InlineField, InlineSwitch, Input } from '@grafana/ui';
+import { DataSourcePluginOptionsEditorProps, DataSourceSettings } from '@grafana/data';
+import { AdvancedHttpSettings, Auth, ConnectionSettings, convertLegacyAuthProps } from '@grafana/plugin-ui';
 import { PIWebAPIDataSourceJsonData } from '../types';
 
 interface Props extends DataSourcePluginOptionsEditorProps<PIWebAPIDataSourceJsonData, {}> {}
@@ -47,7 +48,7 @@ export class PIWebAPIConfigEditor extends PureComponent<Props, State> {
     onOptionsChange({ ...options, jsonData });
   };
 
-  onHttpOptionsChange = (options: DataSourceSettings<DataSourceJsonData, {}>) => {
+  onHttpOptionsChange = (options: DataSourceSettings<PIWebAPIDataSourceJsonData, {}>) => {
     const { onOptionsChange } = this.props;
     onOptionsChange(coerceOptions(options));
   };
@@ -123,12 +124,16 @@ export class PIWebAPIConfigEditor extends PureComponent<Props, State> {
 
     return (
       <div>
-        <DataSourceHttpSettings
-          defaultUrl="https://server.name/piwebapi"
-          dataSourceConfig={options}
+        <ConnectionSettings
+          config={options}
           onChange={this.onHttpOptionsChange}
-          showAccessOptions
+          urlPlaceholder="https://server.name/piwebapi"
         />
+        <Divider />
+        <Auth {...convertLegacyAuthProps({ config: options, onChange: this.onHttpOptionsChange })} />
+        <Divider />
+        <AdvancedHttpSettings config={options} onChange={this.onHttpOptionsChange} />
+        <Divider />
 
         <h3 className="page-heading">Custom Configuration</h3>
 

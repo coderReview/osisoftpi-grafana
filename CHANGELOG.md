@@ -78,4 +78,7 @@
 - Updated frontend packages to `@grafana/*` 12.x
 - Updated backend to `grafana-plugin-sdk-go` v0.296.5 (requires Go 1.26)
 - Replaced deprecated `LegacyForms` fields in the configuration page
+- Replaced deprecated `DataSourceHttpSettings` with `@grafana/plugin-ui` connection, authentication and advanced HTTP settings
+- Replaced deprecated `AsyncSelect` with `Combobox` in the annotations editor
+- Removed the committed `dist` build output from the repository
 - Added Playwright end-to-end tests that run in CI against every supported Grafana version
