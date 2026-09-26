@@ -84,6 +84,7 @@
 - Attributes and PI points are read from the query target when the query has no attributes list (API calls, hand-written queries) - issue #209
 - Fixed AF elements, attributes and PI points with `#`, `&`, `+`, `%` or spaces in their names not returning data; calculation expressions and event frame filters are encoded too - issue #186
 - The backend resource proxy only forwards the PI Web API collections used by the query editor and configuration page (asset servers, databases, elements, attributes, data servers and points); other paths, including path traversal such as `elements/../batch`, return 403
+- Fixed one failing element or attribute in a query (e.g. an element of a multi-value variable without the attribute) dropping the data of the other targets of the query
 - Minimum supported Grafana version is now 11.6.0; tested against Grafana 11.6, 12.x and 13.x
 - Updated plugin scaffolding to `@grafana/create-plugin` 7.11 (dynamic public path, subresource integrity, ESLint 9)
 - Updated frontend packages to `@grafana/*` 12.x

@@ -315,17 +315,19 @@ func (d *Datasource) processBatchtoFrames(processedQuery map[string][]PiProcesse
 
 	for RefID, query := range processedQuery {
 		var subResponse backend.DataResponse
+		var errorStatus backend.Status
 		for _, q := range query {
-			// set response status
-			subResponse.Status = backend.Status(q.Status)
-			// if there is an error in the query, we set the error in the subresponse and break out of the loop returning the error.
+			// A failing target (e.g. an element of a multi-value variable without the attribute) reports its
+			// error and the other targets of the query still return their data.
 			if q.Error != nil {
 				backend.Logger.Error("Process batch to frames - Error processing query", "RefID", RefID, "query", q, "hide", q.HideError)
-				if !q.HideError && strings.Contains(q.Error.Error(), "api error") {
+				if !q.HideError && subResponse.Error == nil && strings.Contains(q.Error.Error(), "api error") {
 					subResponse.Error = q.Error
+					errorStatus = backend.Status(q.Status)
 				}
-				break
+				continue
 			}
+			subResponse.Status = backend.Status(q.Status)
 
 			for _, SummaryType := range *q.Response.getSummaryTypes() {
 				frame, err := convertItemsToDataFrame(&q, d, SummaryType)
@@ -363,6 +365,9 @@ func (d *Datasource) processBatchtoFrames(processedQuery map[string][]PiProcesse
 
 				subResponse.Frames = append(subResponse.Frames, frame)
 			}
+		}
+		if len(subResponse.Frames) == 0 && errorStatus != 0 {
+			subResponse.Status = errorStatus
 		}
 		response.Responses[RefID] = subResponse
 	}
