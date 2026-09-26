@@ -269,31 +269,16 @@ func (d *Datasource) CallResource(ctx context.Context, req *backend.CallResource
 	)
 	defer span.End()
 
-	var isAllowed = true
-	var allowedBasePaths = []string{
-		"/assetdatabases",
-		"/elements",
-		"/assetservers",
-		"/points",
-		"/attributes",
-		"/dataservers",
-		"/annotations",
-	}
-	for _, path := range allowedBasePaths {
-		if strings.HasPrefix(req.Path, path) {
-			isAllowed = true
-			break
-		}
-	}
-
+	resourceURL, isAllowed := allowedResourceURL(req.URL)
 	if !isAllowed {
+		log.DefaultLogger.Warn("Call resource - path not allowed", "path", req.Path)
 		return sender.Send(&backend.CallResourceResponse{
 			Status: http.StatusForbidden,
 			Body:   nil,
 		})
 	}
 
-	r, err := apiGet(ctx, d, req.URL)
+	r, err := apiGet(ctx, d, resourceURL)
 	if err != nil {
 		return sender.Send(&backend.CallResourceResponse{
 			Status: http.StatusNotFound,
@@ -366,4 +351,49 @@ func (d *Datasource) isUsingStreaming() bool {
 func (d *Datasource) isUsingResponseCache() bool {
 	return d.dataSourceOptions.UseExperimental != nil && *d.dataSourceOptions.UseExperimental &&
 		d.dataSourceOptions.UseResponseCache != nil && *d.dataSourceOptions.UseResponseCache
+}
+
+// allowedResourcePaths are the PI Web API collections the frontend may read through CallResource
+// while configuring the datasource, queries and annotations.
+var allowedResourcePaths = []string{
+	"assetdatabases",
+	"elements",
+	"assetservers",
+	"points",
+	"attributes",
+	"dataservers",
+	"annotations",
+}
+
+// allowedResourceURL checks a resource request URL (path and query, as received from Grafana) against
+// allowedResourcePaths and returns the URL to forward to the PI Web API.
+//
+// The first path segment must be one of the allowed collections (PI Web API paths are case-insensitive).
+// Grafana decodes the path before calling the plugin, so "." and ".." segments, backslashes and '%' are
+// rejected: the PI Web API server would resolve them to other endpoints (e.g. elements/../batch). Names
+// and AF paths are always sent in the query string, and WebIDs are URL-safe, so valid requests never
+// contain them in the path.
+func allowedResourceURL(resourceURL string) (string, bool) {
+	path, query, hasQuery := strings.Cut(resourceURL, "?")
+	path = strings.Trim(path, "/")
+	if path == "" || strings.ContainsAny(path, `\%#`) {
+		return "", false
+	}
+
+	segments := strings.Split(path, "/")
+	for _, segment := range segments {
+		if segment == "" || segment == "." || segment == ".." {
+			return "", false
+		}
+	}
+
+	for _, allowed := range allowedResourcePaths {
+		if strings.EqualFold(segments[0], allowed) {
+			if hasQuery {
+				return path + "?" + query, true
+			}
+			return path, true
+		}
+	}
+	return "", false
 }
