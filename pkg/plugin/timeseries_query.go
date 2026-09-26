@@ -32,7 +32,8 @@ type BatchSubRequestMap map[string]BatchSubRequest
 func (d *Datasource) processQuery(allQueries []backend.DataQuery, datasourceUID string) []PiProcessedQuery {
 	var ProcessedQuery []PiProcessedQuery
 
-	for k, query := range allQueries {
+	index := 0
+	for _, query := range allQueries {
 		var PiQuery Query
 
 		// Unmarshal the query into a PiQuery struct, and then unmarshal the PiQuery into a PiProcessedQuery
@@ -84,77 +85,90 @@ func (d *Datasource) processQuery(allQueries []backend.DataQuery, datasourceUID 
 		}
 
 		// At this point we expect that the query is valid, so we can start processing it.
-		// the queries are may contain multiple targets, so we need to loop through them
-		for i, targetBasePath := range PiQuery.Pi.getTargetBasePaths() {
-			for j, attribute := range PiQuery.Pi.Attributes {
-				fullTargetPath := targetBasePath + PiQuery.Pi.getTargetPathSeparator() + attribute.Value.Value
-				// Create a processed query for the target
-				piQuery := PiProcessedQuery{
-					RefID:               PiQuery.RefID,
-					Label:               attribute.Value.Value,
-					UID:                 datasourceUID,
-					IntervalNanoSeconds: PiQuery.Interval,
-					IsPIPoint:           PiQuery.Pi.IsPiPoint,
-					HideError:           PiQuery.Pi.HideError,
-					Streamable:          PiQuery.isStreamable() && d.isUsingStreaming(),
-					FullTargetPath:      fullTargetPath,
-					TargetPath:          targetBasePath,
-					UseUnit:             UseUnit,
-					DigitalStates:       DigitalStates,
-					Display:             PiQuery.Pi.Display,
-					Regex:               PiQuery.Pi.Regex,
-					Nodata:              PiQuery.Pi.Nodata,
-					Summary:             PiQuery.Pi.Summary,
-					HashCode:            PiQuery.Pi.HashCode + "_" + attribute.Value.Value,
-					StartTime:           PiQuery.TimeRange.From.Truncate(time.Second),
-					EndTime:             PiQuery.TimeRange.To.Truncate(time.Second),
-					Variable:            PiQuery.Pi.getVariable(i),
-					Index:               (j + 1) + 100*(i+1) + (100*100)*(k+1),
-				}
+		// Multi-value template variables in the element path and in the attributes are expanded
+		// into every element/attribute combination.
+		targets, err := PiQuery.Pi.getExpandedTargets()
+		if err != nil {
+			log.DefaultLogger.Warn("Process query - Error expanding template variables", "RefID", PiQuery.RefID, "error", err)
+			ProcessedQuery = append(ProcessedQuery, PiProcessedQuery{
+				RefID: PiQuery.RefID,
+				Error: err,
+			})
+			continue
+		}
 
-				WebID := d.getCachedWebID(fullTargetPath)
-
-				// initialize maps
-				piQuery.BatchRequest = make(map[string]BatchSubRequest)
-
-				var baseUrl = d.settings.URL
-				if !strings.HasSuffix(baseUrl, "/") {
-					baseUrl = baseUrl + "/"
-				}
-				dataId := fmt.Sprintf("%s_Req%d_Data", piQuery.RefID, piQuery.Index)
-				if WebID != nil && WebID.WebID != "" {
-					piQuery.WebID = WebID.WebID
-					// DATA FETCH
-					batchSubRequest := BatchSubRequest{
-						Method:   "GET",
-						Resource: baseUrl + PiQuery.getQueryBaseURL() + WebID.WebID,
-						Headers: map[string]string{
-							"Asset-Path": fullTargetPath,
-						},
-					}
-					piQuery.Resource = batchSubRequest.Resource
-					piQuery.BatchRequest[dataId] = batchSubRequest
-				} else {
-					parentId := fmt.Sprintf("%s_Req%d", piQuery.RefID, piQuery.Index)
-					parameter := "$." + parentId + ".Content.WebId"
-					// WEBID FETCH
-					piQuery.BatchRequest[parentId] = BatchSubRequest{
-						Method:   "GET",
-						Resource: baseUrl + d.getRequestWebId(fullTargetPath, piQuery.IsPIPoint),
-					}
-					// DATA FETCH
-					batchSubRequest := BatchSubRequest{
-						Method:     "GET",
-						ParentIds:  []string{parentId},
-						Parameters: []string{parameter},
-						Resource:   baseUrl + PiQuery.getQueryBaseURL() + "{0}",
-					}
-					piQuery.Resource = batchSubRequest.Resource
-					piQuery.BatchRequest[dataId] = batchSubRequest
-				}
-
-				ProcessedQuery = append(ProcessedQuery, piQuery)
+		for _, target := range targets {
+			targetBasePath := target.BasePath
+			fullTargetPath := targetBasePath + PiQuery.Pi.getTargetPathSeparator() + target.Attribute
+			// Index is unique within the request and is used to build the batch request keys
+			index++
+			// Create a processed query for the target
+			piQuery := PiProcessedQuery{
+				RefID:               PiQuery.RefID,
+				Label:               target.Attribute,
+				UID:                 datasourceUID,
+				IntervalNanoSeconds: PiQuery.Interval,
+				IsPIPoint:           PiQuery.Pi.IsPiPoint,
+				HideError:           PiQuery.Pi.HideError,
+				Streamable:          PiQuery.isStreamable() && d.isUsingStreaming(),
+				FullTargetPath:      fullTargetPath,
+				TargetPath:          targetBasePath,
+				UseUnit:             UseUnit,
+				DigitalStates:       DigitalStates,
+				Display:             PiQuery.Pi.Display,
+				Regex:               PiQuery.Pi.Regex,
+				Nodata:              PiQuery.Pi.Nodata,
+				Summary:             PiQuery.Pi.Summary,
+				HashCode:            PiQuery.Pi.HashCode + "_" + fullTargetPath,
+				StartTime:           PiQuery.TimeRange.From.Truncate(time.Second),
+				EndTime:             PiQuery.TimeRange.To.Truncate(time.Second),
+				Variable:            target.Variable,
+				MultiVariable:       target.MultiVariable,
+				Index:               index,
 			}
+
+			WebID := d.getCachedWebID(fullTargetPath)
+
+			// initialize maps
+			piQuery.BatchRequest = make(map[string]BatchSubRequest)
+
+			var baseUrl = d.settings.URL
+			if !strings.HasSuffix(baseUrl, "/") {
+				baseUrl = baseUrl + "/"
+			}
+			dataId := fmt.Sprintf("%s_Req%d_Data", piQuery.RefID, piQuery.Index)
+			if WebID != nil && WebID.WebID != "" {
+				piQuery.WebID = WebID.WebID
+				// DATA FETCH
+				batchSubRequest := BatchSubRequest{
+					Method:   "GET",
+					Resource: baseUrl + PiQuery.getQueryBaseURL() + WebID.WebID,
+					Headers: map[string]string{
+						"Asset-Path": fullTargetPath,
+					},
+				}
+				piQuery.Resource = batchSubRequest.Resource
+				piQuery.BatchRequest[dataId] = batchSubRequest
+			} else {
+				parentId := fmt.Sprintf("%s_Req%d", piQuery.RefID, piQuery.Index)
+				parameter := "$." + parentId + ".Content.WebId"
+				// WEBID FETCH
+				piQuery.BatchRequest[parentId] = BatchSubRequest{
+					Method:   "GET",
+					Resource: baseUrl + d.getRequestWebId(fullTargetPath, piQuery.IsPIPoint),
+				}
+				// DATA FETCH
+				batchSubRequest := BatchSubRequest{
+					Method:     "GET",
+					ParentIds:  []string{parentId},
+					Parameters: []string{parameter},
+					Resource:   baseUrl + PiQuery.getQueryBaseURL() + "{0}",
+				}
+				piQuery.Resource = batchSubRequest.Resource
+				piQuery.BatchRequest[dataId] = batchSubRequest
+			}
+
+			ProcessedQuery = append(ProcessedQuery, piQuery)
 		}
 	}
 
@@ -500,50 +514,6 @@ func (q *PIWebAPIQuery) getBasePath() string {
 	return (*q.Target)[:semiIndex]
 }
 
-func (q *PIWebAPIQuery) getTargetBasePaths() []string {
-	if q.Target == nil {
-		return []string{}
-	}
-	basePath := q.getBasePath()
-
-	// Find and process a pattern like {<variable1>,< variable2>,..., <variable20>}
-	startIndex := strings.Index(basePath, "{")
-	endIndex := strings.Index(basePath, "}")
-
-	if startIndex != -1 && endIndex != -1 && startIndex < endIndex {
-		globalPrefix := basePath[:startIndex]
-		globalSuffix := basePath[endIndex+1:]
-		suffixes := basePath[startIndex+1 : endIndex]
-		suffixList := strings.Split(suffixes, ",")
-
-		basePaths := make([]string, 0, len(suffixList))
-		for _, suffix := range suffixList {
-			basePaths = append(basePaths, globalPrefix+strings.TrimSpace(suffix)+globalSuffix)
-		}
-		return basePaths
-	}
-
-	// If no pattern was found, return the base path as the only item in the slice
-	return []string{basePath}
-}
-
-func (q *PIWebAPIQuery) getVariable(index int) string {
-	basePath := q.getBasePath()
-
-	// Find and process a pattern like {<variable1>,< variable2>,..., <variable20>}
-	startIndex := strings.Index(basePath, "{")
-	endIndex := strings.Index(basePath, "}")
-
-	if startIndex != -1 && endIndex != -1 && startIndex < endIndex {
-		suffixes := basePath[startIndex+1 : endIndex]
-		suffixList := strings.Split(suffixes, ",")
-		if index < len(suffixList) {
-			return suffixList[index]
-		}
-	}
-	return ""
-}
-
 // func (q *PIWebAPIQuery) getfullTargetPath(target string) string {
 // 	fullTargetPath := q.getBasePath()
 // 	if q.IsPiPoint {
@@ -605,14 +575,14 @@ func (q *PIWebAPIQuery) isUseLastValue() bool {
 }
 
 func (q *Query) getMaxDataPoints() int {
-	if q.Pi.RecordedValues.MaxNumber != nil {
+	if q.Pi.RecordedValues != nil && q.Pi.RecordedValues.MaxNumber != nil {
 		return *q.Pi.RecordedValues.MaxNumber
 	}
 	return q.MaxDataPoints
 }
 
 func (q *Query) getBoundaryType() string {
-	if q.Pi.RecordedValues.BoundaryType != nil {
+	if q.Pi.RecordedValues != nil && q.Pi.RecordedValues.BoundaryType != nil {
 		return *q.Pi.RecordedValues.BoundaryType
 	}
 	return "Inside"

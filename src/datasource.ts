@@ -15,7 +15,14 @@ import {
 import { getTemplateSrv, TemplateSrv, DataSourceWithBackend } from '@grafana/runtime';
 
 import { PIWebAPIQuery, PIWebAPIDataSourceJsonData, PiDataServer, PiwebapiRsp } from './types';
-import { getSummaryTypes, hashCode, metricQueryTransform, removeTime } from 'helper';
+import {
+  firstVariableValue,
+  formatVariableValue,
+  getSummaryTypes,
+  hashCode,
+  metricQueryTransform,
+  removeTime,
+} from 'helper';
 
 import { PiWebAPIAnnotationsQueryEditor } from 'query/AnnotationsQueryEditor';
 
@@ -85,7 +92,7 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
   applyTemplateVariables(query: PIWebAPIQuery, scopedVars: ScopedVars) {
     return {
       ...query,
-      target: query.target ? this.templateSrv.replace(query.target, scopedVars) : '',
+      target: query.target ? this.templateSrv.replace(query.target, scopedVars, formatVariableValue) : '',
     };
   }
 
@@ -124,18 +131,19 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
       query = JSON.parse(query as string);
     }
     if (queryOptions.isPiPoint) {
-      query.path = this.templateSrv.replace(query.path, queryOptions);
+      query.path = this.templateSrv.replace(query.path, queryOptions, formatVariableValue);
     } else {
       if (query.path === '') {
         query.type = querydepth[0];
       } else {
-        query.path = this.templateSrv.replace(query.path, queryOptions); // replace variables in the path
+        query.path = this.templateSrv.replace(query.path, queryOptions, formatVariableValue); // replace variables in the path
         query.path = query.path.split(';')[0]; // if the attribute is in the path, let's remote it
         if (query.type !== 'attributes') {
           query.type = querydepth[Math.max(0, Math.min(query.path.split('\\').length, querydepth.length - 1))];
         }
       }
-      query.path = query.path.replace(/\{([^\\])*\}/gi, (r: string) => r.substring(1, r.length - 2).split(',')[0]);
+      // multi-value variables: browse the hierarchy using the first selected value
+      query.path = firstVariableValue(query.path);
     }
 
     query.filter = query.filter ?? '*';
@@ -220,20 +228,31 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
     options.targets = map(options.targets, (target) => {
       const tar = {
         enableStreaming: target.enableStreaming,
-        target: this.templateSrv.replace(target.target, options.scopedVars),
-        elementPath: this.templateSrv.replace(target.elementPath, options.scopedVars),
-        attributes: map(target.attributes, (att) => {
-          if (att.value) {
-            att.value.value = this.templateSrv.replace(att.value.value, options.scopedVars);
-          }
-          return att;
-        }),
-        segments: map(target.segments, (att) => {
-          if (att.value) {
-            att.value.value = this.templateSrv.replace(att.value.value, options.scopedVars);
-          }
-          return att;
-        }),
+        target: this.templateSrv.replace(target.target, options.scopedVars, formatVariableValue),
+        elementPath: this.templateSrv.replace(target.elementPath, options.scopedVars, formatVariableValue),
+        // copy the attributes and segments so the saved query keeps its template variables
+        attributes: map(target.attributes, (att) =>
+          att.value
+            ? {
+                ...att,
+                value: {
+                  ...att.value,
+                  value: this.templateSrv.replace(att.value.value, options.scopedVars, formatVariableValue),
+                },
+              }
+            : att
+        ),
+        segments: map(target.segments, (att) =>
+          att.value
+            ? {
+                ...att,
+                value: {
+                  ...att.value,
+                  value: this.templateSrv.replace(att.value.value, options.scopedVars, formatVariableValue),
+                },
+              }
+            : att
+        ),
         isAnnotation: !!target.isAnnotation,
         display: !!target.display ? this.templateSrv.replace(target.display, options.scopedVars) : undefined,
         refId: target.refId,

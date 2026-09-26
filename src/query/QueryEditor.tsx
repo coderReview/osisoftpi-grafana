@@ -715,6 +715,12 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
 
         const filteredAttributes = filter(attributes, (attrib: SelectableValue<PIWebAPISelectableValue>) => {
           const changedValue = datasource.templateSrv.replace(attrib.value?.value);
+          // keep attributes that use template variables: a multi-value variable expands into several
+          // attributes, which are resolved by the backend when the query runs.
+          // (templateSrv.containsTemplate is not reliable in Grafana 11.6 dashboards, so compare instead)
+          if (changedValue !== attrib.value?.value) {
+            return true;
+          }
           return validAttributes[changedValue] !== undefined;
         });
 

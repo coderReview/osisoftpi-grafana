@@ -19,6 +19,37 @@ export function getSummaryTypes(summary: PiWebAPISummary | undefined) {
 }
 // END TODO
 
+/**
+ * Formats template variable values for PI Web API paths.
+ *
+ * A multi-value variable (or "All") becomes a `{value1,value2}` group. The backend expands every group into
+ * one target per value, so several variables in the element path and variables in attributes or PI points
+ * produce all combinations. Commas, braces and `%` inside the values are percent-encoded so they cannot
+ * break the group; the backend decodes them.
+ */
+export function formatVariableValue(value: unknown): string {
+  if (!Array.isArray(value)) {
+    return value === undefined || value === null ? '' : String(value);
+  }
+  if (value.length === 1) {
+    return String(value[0]);
+  }
+  const encoded = value.map((v) =>
+    String(v).replace(/%/g, '%25').replace(/,/g, '%2C').replace(/\{/g, '%7B').replace(/\}/g, '%7D')
+  );
+  return '{' + encoded.join(',') + '}';
+}
+
+/**
+ * Replaces every `{value1,value2}` group created by formatVariableValue with its first value.
+ * Used when browsing the AF hierarchy, which needs a single concrete path.
+ */
+export function firstVariableValue(path: string): string {
+  return path.replace(/\{([^{}]*)\}/g, (_: string, values: string) =>
+    values.split(',')[0].replace(/%2C/g, ',').replace(/%7B/g, '{').replace(/%7D/g, '}').replace(/%25/g, '%')
+  );
+}
+
 export function removeTime(s: any): string {
   const temp = Object.assign({}, s);
   delete temp.startTime;

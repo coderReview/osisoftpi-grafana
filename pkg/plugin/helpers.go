@@ -369,7 +369,10 @@ func getDataLabels(useNewFormat bool, q *PiProcessedQuery, pointType string, des
 		label = q.Label + summaryLabel
 	} else {
 		targetParts := strings.Split(q.FullTargetPath, `\`)
-		if q.Variable != "" {
+		if q.MultiVariable {
+			// e.g. SiteA\Unit2|Temperature
+			label = q.Variable + "|" + q.Label
+		} else if q.Variable != "" {
 			label = q.Variable + "|" + targetParts[len(targetParts)-1]
 		} else {
 			label = targetParts[len(targetParts)-1]

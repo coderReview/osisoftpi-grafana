@@ -61,6 +61,20 @@ An example config is shown below.
 
 ![template_setup_1.png](https://github.com/GridProtectionAlliance/osisoftpi-grafana/raw/master/docs/img/template_setup_1.png)
 
+## Using variables in queries
+
+Variables can be used in the AF element path, in attributes and in PI point names.
+Multi-value variables (and the `All` option) are expanded into one series for every selected value:
+
+- Several variables can be used in the element path, e.g. `AFSERVER\DB\${site}\${unit}`.
+  Every combination of the selected values is queried.
+- A variable used as an attribute (e.g. `${attribute}`) or as a PI point name expands into one attribute or point per value.
+- Element and attribute variables are combined, so `${site}` (2 values) x `${unit}` (2 values) x `${attribute}` (2 values) returns 8 series.
+- When the element path uses more than one variable, series are named after the selected values, e.g. `SiteA\Unit2|Temperature`.
+- A single query can expand into at most 1000 element/attribute combinations; larger expansions return an error.
+
+Variables with a custom `All` value are sent as that value and are not expanded.
+
 
 # Event Frames and Annotations
 
