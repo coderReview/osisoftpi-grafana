@@ -447,9 +447,11 @@ func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, Su
 		timestamps: make([]time.Time, 0),
 	}
 
+	units := preferredUnits(processedQuery.Response.getUnits(SummaryType), d.getUnitsForWebID(webID))
+
 	// get frame name
 	frameLabel := getDataLabels(d.isUsingNewFormat(), processedQuery, d.getPointTypeForWebID(webID),
-		d.getDescriptionForWebID(webID), d.getUnitsForWebID(webID), SummaryType)
+		d.getDescriptionForWebID(webID), units, SummaryType)
 
 	var labels map[string]string
 	var digitalState = d.getDigitalStateForWebID(webID)
@@ -553,8 +555,10 @@ func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, Su
 	timeField := data.NewField(data.TimeSeriesTimeFieldName, nil, fP.timestamps)
 	var fieldConfig *data.FieldConfig
 	if includeMetaData {
-		fieldConfig = getFieldConfig(d.getUnitsForWebID(webID), processedQuery.Response.getUnits(SummaryType),
-			d.getDescriptionForWebID(webID))
+		fieldConfig = &data.FieldConfig{
+			Unit:        units,
+			Description: d.getDescriptionForWebID(webID),
+		}
 	}
 	if !digitalState || !digitalStates {
 		valueField := data.NewField(frameLabel["name"], labels, valuepointers)
@@ -581,17 +585,14 @@ func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, Su
 	return frame, nil
 }
 
-// getFieldConfig returns the field configuration with the units and description of a PI point or AF attribute.
-// The units come from the WebID metadata (EngineeringUnits or DefaultUnitsName) and fall back to the units
-// returned with the values when the metadata has none.
-func getFieldConfig(units string, responseUnits string, description string) *data.FieldConfig {
-	if strings.TrimSpace(units) == "" {
-		units = responseUnits
+// preferredUnits returns the units to show for a PI point or AF attribute: the abbreviation returned with the
+// values (e.g. "m3/h"), or the units from the WebID metadata when there is none. AF attributes report
+// DefaultUnitsName as the full name ("cubic meter per hour"), while PI points report the abbreviation.
+func preferredUnits(responseUnits string, metadataUnits string) string {
+	if units := strings.TrimSpace(responseUnits); units != "" {
+		return units
 	}
-	return &data.FieldConfig{
-		Unit:        strings.TrimSpace(units),
-		Description: description,
-	}
+	return strings.TrimSpace(metadataUnits)
 }
 
 func getTimeStamp(input reflect.Value) (reflect.Value, error) {

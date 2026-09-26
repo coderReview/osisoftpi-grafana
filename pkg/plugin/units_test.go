@@ -46,11 +46,13 @@ func TestConvertItemsToDataFrameUnits(t *testing.T) {
 		datasourceUnits *bool
 		queryUnits      bool
 		cachedUnits     string
+		responseUnits   string // "-" for none; default "°C"
 		wantUnit        string
 		wantConfig      bool
 	}{
-		{name: "enabled in datasource and query", datasourceUnits: &enabled, queryUnits: true, cachedUnits: "degree Celsius", wantUnit: "degree Celsius", wantConfig: true},
-		{name: "falls back to response units", datasourceUnits: &enabled, queryUnits: true, cachedUnits: "", wantUnit: "°C", wantConfig: true},
+		{name: "enabled in datasource and query: abbreviation from the values", datasourceUnits: &enabled, queryUnits: true, cachedUnits: "degree Celsius", wantUnit: "°C", wantConfig: true},
+		{name: "no cached units: abbreviation from the values", datasourceUnits: &enabled, queryUnits: true, cachedUnits: "", wantUnit: "°C", wantConfig: true},
+		{name: "no abbreviation: cached units", datasourceUnits: &enabled, queryUnits: true, cachedUnits: "degree Celsius", responseUnits: "-", wantUnit: "degree Celsius", wantConfig: true},
 		{name: "disabled in query", datasourceUnits: &enabled, queryUnits: false, cachedUnits: "degree Celsius"},
 		{name: "disabled in datasource", datasourceUnits: &disabled, queryUnits: true, cachedUnits: "degree Celsius"},
 		{name: "not set in datasource", datasourceUnits: nil, queryUnits: true, cachedUnits: "degree Celsius"},
@@ -59,7 +61,13 @@ func TestConvertItemsToDataFrameUnits(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := newUnitsTestDatasource(tt.datasourceUnits, tt.cachedUnits)
-			frame, err := convertItemsToDataFrame(newUnitsTestQuery(tt.queryUnits), d, "")
+			q := newUnitsTestQuery(tt.queryUnits)
+			if tt.responseUnits == "-" {
+				response := q.Response.(PiBatchDataWithoutSubItems)
+				response.UnitsAbbreviation = ""
+				q.Response = response
+			}
+			frame, err := convertItemsToDataFrame(q, d, "")
 			if err != nil {
 				t.Fatalf("convertItemsToDataFrame returned error: %v", err)
 			}
