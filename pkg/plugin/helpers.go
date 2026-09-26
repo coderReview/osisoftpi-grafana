@@ -408,8 +408,12 @@ func getDataLabels(useNewFormat bool, q *PiProcessedQuery, pointType string, des
 	// Use ReplaceAllString to replace all instances of the search pattern with the replacement string
 	// FIXME: This is working, but graph panels seem to not render the trend.
 	if q.isRegexQuery() {
-		regex := regexp.MustCompile(*q.Regex.Search)
-		frameLabel["name"] = regex.ReplaceAllString(frameLabel["name"], *q.Regex.Replace)
+		// the search pattern is typed by the user, so an invalid pattern must not panic
+		if regex, err := regexp.Compile(*q.Regex.Search); err == nil {
+			frameLabel["name"] = regex.ReplaceAllString(frameLabel["name"], *q.Regex.Replace)
+		} else {
+			log.DefaultLogger.Warn("Invalid regex in query, the label is not replaced", "search", *q.Regex.Search, "error", err)
+		}
 	} else if q.Display != nil && strings.TrimSpace(*q.Display) != "" {
 		// Old format with display name
 		frameLabel["name"] = strings.TrimSpace(*q.Display)

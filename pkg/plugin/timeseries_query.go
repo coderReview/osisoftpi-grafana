@@ -373,7 +373,7 @@ func (q *PIWebAPIQuery) isSummary() bool {
 	if q.Summary == nil {
 		return false
 	}
-	if q.Summary.Enable == nil {
+	if q.Summary.Enable == nil || q.Summary.Basis == nil || q.Summary.Types == nil {
 		return false
 	}
 	return *q.Summary.Enable && *q.Summary.Basis != "" && len(*q.Summary.Types) > 0
@@ -470,6 +470,9 @@ func _getDurationBase(duration string) string {
 }
 
 func (q *PIWebAPIQuery) getSummaryURIComponent() string {
+	if !q.isSummary() {
+		return ""
+	}
 	uri := ""
 	for _, t := range *q.Summary.Types {
 		uri += "&summaryType=" + t.Value.Value

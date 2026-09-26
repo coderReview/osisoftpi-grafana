@@ -87,8 +87,8 @@ func (q *PIWebAPIQuery) getExpandedTargets() ([]expandedTarget, error) {
 	basePaths := expandVariables(q.getBasePath())
 
 	attributes := make([]string, 0, len(q.Attributes))
-	for _, attribute := range q.Attributes {
-		for _, expanded := range expandVariables(attribute.Value.Value) {
+	for _, name := range q.getAttributeNames() {
+		for _, expanded := range expandVariables(name) {
 			attributes = append(attributes, expanded.Value)
 		}
 	}
@@ -111,4 +111,24 @@ func (q *PIWebAPIQuery) getExpandedTargets() ([]expandedTarget, error) {
 		}
 	}
 	return targets, nil
+}
+
+// getAttributeNames returns the attribute (or PI point) names of the query. The query editor sends them in the
+// attributes array; queries written by hand or sent to the API may only list them in the target after the
+// element path, separated by semicolons (e.g. `Server\Database\Element;Attribute1;Attribute2`).
+func (q *PIWebAPIQuery) getAttributeNames() []string {
+	names := make([]string, 0, len(q.Attributes))
+	for _, attribute := range q.Attributes {
+		names = append(names, attribute.Value.Value)
+	}
+	if len(names) > 0 || q.Target == nil {
+		return names
+	}
+	parts := strings.Split(*q.Target, ";")
+	for _, part := range parts[1:] {
+		if part = strings.TrimSpace(part); part != "" {
+			names = append(names, part)
+		}
+	}
+	return names
 }
