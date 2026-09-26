@@ -69,3 +69,13 @@
 - Increased WebID cache from 1 hour to 12 hours and made it configurable
 
 - Added experimental feature to cache latest response in case of request failure to PiWebAPI
+
+## 6.0.0
+
+- Rebuilt the plugin with current Grafana tooling to fix it failing to load on Grafana 12.3 and later - issue #197
+- Minimum supported Grafana version is now 11.6.0; tested against Grafana 11.6, 12.x and 13.x
+- Updated plugin scaffolding to `@grafana/create-plugin` 7.11 (dynamic public path, subresource integrity, ESLint 9)
+- Updated frontend packages to `@grafana/*` 12.x
+- Updated backend to `grafana-plugin-sdk-go` v0.296.5 (requires Go 1.26)
+- Replaced deprecated `LegacyForms` fields in the configuration page
+- Added Playwright end-to-end tests that run in CI against every supported Grafana version

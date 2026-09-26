@@ -350,7 +350,7 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
     const map: Record<string, any[]> = {};
 
     dataFrame.fields.forEach((field) => {
-      map[field.name] = field.values.toArray();
+      map[field.name] = Array.from(field.values);
     });
 
     return map;

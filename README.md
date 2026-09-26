@@ -2,6 +2,8 @@
 
 This data source provides access to OSIsoft PI and PI-AF data through PI Web API.
 
+Requires Grafana 11.6.0 or later. The plugin is tested against Grafana 11.6, 12.x and 13.x.
+
 ![display](https://github.com/GridProtectionAlliance/osisoftpi-grafana/raw/master/docs/img/system_overview.png)
 
 # Usage
