@@ -88,6 +88,7 @@
 - Connection and authentication errors (e.g. a wrong password, 401) are shown on the panel instead of an empty "No data"
 - Units of AF attributes use the abbreviation returned by PI Web API (e.g. `m3/h` instead of `cubic meter per hour`), as for PI points; the full name is used when no abbreviation is returned
 - AF attributes with the value type `<Anything>` (e.g. AF links) or a type unknown to the plugin take the type of their values, instead of being read as text ("Data is missing a number field") - issue #173
+- Fixed "Replace Bad Data" = Previous failing the whole request (integer points, or a bad first value), and bad values of DateTime attributes being dropped instead of replaced
 - Minimum supported Grafana version is now 11.6.0; tested against Grafana 11.6, 12.x and 13.x
 - Updated plugin scaffolding to `@grafana/create-plugin` 7.11 (dynamic public path, subresource integrity, ESLint 9)
 - Updated frontend packages to `@grafana/*` 12.x

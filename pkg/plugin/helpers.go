@@ -320,15 +320,17 @@ func parseTimestampValue(val reflect.Value) (reflect.Value, error) {
 	return ts, nil
 }
 
-func updateBadData(index int, fp FrameProcessed, timestamp time.Time, noDataReplace string) FrameProcessed {
+func updateBadData(fp FrameProcessed, timestamp time.Time, noDataReplace string) FrameProcessed {
 	// reflect
 	zeroVal := reflect.Zero(fp.sliceType.Elem())
 	valuesValue := reflect.ValueOf(fp.values)
+	// position of the value in the frame (not the item index: dropped items shift the positions)
+	position := valuesValue.Len()
 	// update
 	switch noDataReplace {
 	case "Null":
 		fp.timestamps = append(fp.timestamps, timestamp)
-		fp.badValues = append(fp.badValues, index)
+		fp.badValues = append(fp.badValues, position)
 		fp.values = reflect.Append(valuesValue, zeroVal).Interface()
 	case "Keep":
 		fp.timestamps = append(fp.timestamps, timestamp)
@@ -338,11 +340,16 @@ func updateBadData(index int, fp FrameProcessed, timestamp time.Time, noDataRepl
 		fp.values = reflect.Append(valuesValue, zeroVal).Interface()
 	case "Previous":
 		fp.timestamps = append(fp.timestamps, timestamp)
-		fp.values = reflect.Append(valuesValue, fp.prevVal).Interface()
+		if fp.prevVal.IsValid() {
+			fp.values = reflect.Append(valuesValue, fp.prevVal).Interface()
+		} else { // no good value yet
+			fp.badValues = append(fp.badValues, position)
+			fp.values = reflect.Append(valuesValue, zeroVal).Interface()
+		}
 	case "Drop":
 	default:
 		fp.timestamps = append(fp.timestamps, timestamp)
-		fp.badValues = append(fp.badValues, index)
+		fp.badValues = append(fp.badValues, position)
 		fp.values = reflect.Append(valuesValue, zeroVal).Interface()
 	}
 	log.DefaultLogger.Debug("Update bad data", "no_replace", noDataReplace, "zero", zeroVal.Interface())
@@ -444,7 +451,7 @@ func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, Su
 
 	fP := FrameProcessed{
 		sliceType:  sliceType,
-		prevVal:    reflect.Zero(sliceType),
+		prevVal:    reflect.Value{}, // no good value yet
 		values:     reflect.MakeSlice(reflect.SliceOf(sliceType.Elem()), 0, 0).Interface(),
 		badValues:  make([]int, 0),
 		timestamps: make([]time.Time, 0),
@@ -464,10 +471,10 @@ func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, Su
 		labels = frameLabel
 	}
 
-	for i, item := range items {
+	for _, item := range items {
 		if item.Value == nil {
 			log.DefaultLogger.Debug("Convert items to frames - nil", "value", item.Value, "item", item)
-			fP = updateBadData(i, fP, item.Timestamp, noDataReplace)
+			fP = updateBadData(fP, item.Timestamp, noDataReplace)
 			continue
 		}
 
@@ -475,7 +482,7 @@ func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, Su
 
 		if !fP.val.IsValid() {
 			log.DefaultLogger.Debug("Convert items to frames - invalid", "value", item.Value, "item", item)
-			fP = updateBadData(i, fP, item.Timestamp, noDataReplace)
+			fP = updateBadData(fP, item.Timestamp, noDataReplace)
 			continue
 		}
 
@@ -487,18 +494,19 @@ func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, Su
 
 		// handle value being a timestamp, the PIWab API returns a timestamp as a string
 		// we need to convert it to a time.Time
-		if fP.sliceType == reflect.TypeOf([]time.Time{}) {
+		if fP.sliceType == reflect.TypeOf([]time.Time{}) && item.isGood() {
 			var err error
 			fP.val, err = parseTimestampValue(fP.val)
 			if err != nil {
-				log.DefaultLogger.Error("Convert items to frames - parseTimestampValue", "error", err.Error(), "kind", fP.val.Kind().String(), "item", item)
+				log.DefaultLogger.Error("Convert items to frames - parseTimestampValue", "error", err.Error(), "item", item)
+				fP = updateBadData(fP, item.Timestamp, noDataReplace)
 				continue
 			}
 		}
 
 		_, digitalState = item.Value.(map[string]interface{})
 		if !item.isGood() {
-			fP = updateBadData(i, fP, item.Timestamp, noDataReplace)
+			fP = updateBadData(fP, item.Timestamp, noDataReplace)
 		} else if digitalState { // digital state
 			var pds PointDigitalState
 			if b, err := json.Marshal(item.Value); err == nil {
@@ -512,22 +520,23 @@ func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, Su
 				} else {
 					// should not happen
 					log.DefaultLogger.Error("Convert items to frames - error unmarshalling digital state", err)
-					fP = updateBadData(i, fP, item.Timestamp, noDataReplace)
+					fP = updateBadData(fP, item.Timestamp, noDataReplace)
 				}
 			} else {
 				// should not happen
 				log.DefaultLogger.Error("Convert items to frames - error unmarshalling digital state", err)
-				fP = updateBadData(i, fP, item.Timestamp, noDataReplace)
+				fP = updateBadData(fP, item.Timestamp, noDataReplace)
 			}
 		} else if fP.val.Type().Kind() != fP.sliceType.Elem().Kind() { // mismatch - try conversion
 			if compatible(fP.val.Type(), fP.sliceType.Elem()) { // try to convert if numeric values
+				converted := fP.val.Convert(fP.sliceType.Elem())
 				fP.timestamps = append(fP.timestamps, item.Timestamp)
-				fP.values = reflect.Append(reflect.ValueOf(fP.values), fP.val.Convert(fP.sliceType.Elem())).Interface()
-				fP.prevVal = fP.val
+				fP.values = reflect.Append(reflect.ValueOf(fP.values), converted).Interface()
+				fP.prevVal = converted
 				log.DefaultLogger.Debug("Convert items to frames - Mismatch compatible", "ValKind", fP.val.Type().String(), "Val", fP.val.Interface(),
 					"SliceKind", fP.sliceType.Elem().String(), "item", item)
 			} else {
-				fP = updateBadData(i, fP, item.Timestamp, noDataReplace)
+				fP = updateBadData(fP, item.Timestamp, noDataReplace)
 				log.DefaultLogger.Warn("Convert items to frames - Mismatch", "ValKind", fP.val.Type().String(), "Val", fP.val.Interface(),
 					"SliceKind", fP.sliceType.Elem().String(), "item", item)
 			}
@@ -542,7 +551,7 @@ func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, Su
 	log.DefaultLogger.Debug("Convert items to frames - Cache", "Cached", processedQuery.Cached, "TimeLen", len(fP.timestamps),
 		"RefID", processedQuery.RefID)
 	if processedQuery.Cached {
-		if len(fP.timestamps) > 1 {
+		if len(fP.timestamps) > 1 && fP.prevVal.IsValid() {
 			fP.values = reflect.Append(reflect.ValueOf(fP.values), fP.prevVal).Interface()
 			fP.timestamps = append(fP.timestamps, processedQuery.EndTime)
 		} else if len(fP.timestamps) == 1 {
