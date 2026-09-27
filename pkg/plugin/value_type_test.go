@@ -35,9 +35,11 @@ func TestAttributeValueTypeFromValues(t *testing.T) {
 		`\\AF\DB\E|Anything state`:   {valueType: strPtr(""), values: []interface{}{running, stopped}},
 		`\\AF\DB\E|Anything bad first`: {valueType: strPtr(""), values: []interface{}{
 			map[string]interface{}{"Name": "Bad Input", "Value": 307, "IsSystem": true}, 2.5}},
-		`\\AF\DB\E|Unknown type`: {valueType: strPtr("SomeNewType"), values: []interface{}{7.5, 8.5}},
-		`\\AF\DB\E|Single`:       {valueType: strPtr("Single")},
-		`\\AF\DB\E|String`:       {valueType: strPtr("String"), values: []interface{}{"a", "b"}},
+		`\\AF\DB\E|Anything named`:      {valueType: strPtr("Anything"), values: []interface{}{2}},
+		`\\AF\DB\E|Anything named text`: {valueType: strPtr("Anything"), values: []interface{}{"Normal operation"}},
+		`\\AF\DB\E|Unknown type`:        {valueType: strPtr("SomeNewType"), values: []interface{}{7.5, 8.5}},
+		`\\AF\DB\E|Single`:              {valueType: strPtr("Single")},
+		`\\AF\DB\E|String`:              {valueType: strPtr("String"), values: []interface{}{"a", "b"}},
 	}}
 	server := fake.start(t)
 
@@ -54,6 +56,9 @@ func TestAttributeValueTypeFromValues(t *testing.T) {
 		{attribute: "Anything state", wantType: data.FieldTypeNullableInt32, want: []interface{}{int32(1), int32(0)}},
 		{attribute: "Anything state", digitalStates: true, wantType: data.FieldTypeString, want: []interface{}{"Running", "Stopped"}},
 		{attribute: "Anything bad first", wantType: data.FieldTypeNullableFloat64, want: []interface{}{nil, 2.5}},
+		// some PI Web API versions report <Anything> as the type name "Anything" instead of an empty type
+		{attribute: "Anything named", wantType: data.FieldTypeNullableFloat64, want: []interface{}{2.0}},
+		{attribute: "Anything named text", wantType: data.FieldTypeNullableString, want: []interface{}{"Normal operation"}},
 		{attribute: "Unknown type", wantType: data.FieldTypeNullableFloat64, want: []interface{}{7.5, 8.5}},
 		// declared types are unchanged
 		{attribute: "Single", wantType: data.FieldTypeNullableFloat64, want: []interface{}{1.5, 2.5}},
