@@ -15,6 +15,7 @@ import {
 } from '@grafana/data';
 import { getTemplateSrv, TemplateSrv, DataSourceWithBackend } from '@grafana/runtime';
 
+import { migrateQuery } from './queryVersion';
 import { PIWebAPIQuery, PIWebAPIDataSourceJsonData, PIWebAPISelectableValue, PiDataServer, PiwebapiRsp } from './types';
 import {
   buildQueryString,
@@ -23,7 +24,6 @@ import {
   getSummaryTypes,
   hashCode,
   metricQueryTransform,
-  migrateLegacyQuery,
   removeServerPrefix,
   removeTime,
 } from 'helper';
@@ -242,7 +242,7 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
         : segment;
 
     options.targets = map(options.targets, (savedTarget) => {
-      const target = migrateLegacyQuery(savedTarget);
+      const target = migrateQuery(savedTarget);
       const tar = {
         enableStreaming: target.enableStreaming,
         target: this.templateSrv.replace(target.target, options.scopedVars, formatVariableValue),
@@ -272,6 +272,8 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
         endTime: options.range.to,
         isPiPoint: !!target.isPiPoint,
         hideError: !!target.hideError,
+        queryVersion: target.queryVersion,
+        pluginVersion: target.pluginVersion,
         scopedVars: options.scopedVars,
         hashCode: '',
       };

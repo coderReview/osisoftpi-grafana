@@ -8,7 +8,8 @@ import { PiWebAPIDatasource } from '../datasource';
 import { QueryInlineField, QueryRawInlineField, QueryRowTerminator } from '../components/Forms';
 import { PIWebAPISelectableValue, PIWebAPIDataSourceJsonData, PIWebAPIQuery, defaultQuery } from '../types';
 import { QueryEditorModeSwitcher } from 'components/QueryEditorModeSwitcher';
-import { parseRawQuery, getSummaryTypes, migrateLegacyQuery, removeServerPrefix } from 'helper';
+import { parseRawQuery, getSummaryTypes, removeServerPrefix } from 'helper';
+import { migrateQuery, QUERY_VERSION } from 'queryVersion';
 
 const LABEL_WIDTH = 24;
 const LABEL_SWITCH_WIDTH = 49.067 / 8.0;
@@ -957,11 +958,13 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
   };
 
   initialLoad = (force: boolean) => {
-    const query = migrateLegacyQuery(this.props.query);
+    const migrated = migrateQuery(this.props.query);
+    const query = migrated === this.props.query ? migrated : this.withVersion(migrated);
     if (query !== this.props.query) {
       this.props.onChange(query);
     }
-    const metricsQuery = defaults(query, defaultQuery) as PIWebAPIQuery;
+    // defaults on a copy: the defaults must not be saved into the query just because it was opened
+    const metricsQuery = defaults({ ...query }, defaultQuery) as PIWebAPIQuery;
     const { segments, attributes, summary, isPiPoint } = metricsQuery;
 
     let segmentsArray: Array<SelectableValue<PIWebAPISelectableValue>> = force ? [] : segments?.slice(0) ?? [];
@@ -988,11 +991,19 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
       this.piServer = segmentsArray.filter((s) => s.label);
     }
     this.updateArray(segmentsArray, attributesArray, summariesArray, !!isPiPoint, () => {
-      this.onChange(query);
+      this.onChange(query, false);
     });
   };
 
-  onChange = (query: PIWebAPIQuery) => {
+  /** Adds the format version and the plugin version to a query that is saved. */
+  withVersion = (query: PIWebAPIQuery): PIWebAPIQuery => ({
+    ...query,
+    queryVersion: QUERY_VERSION,
+    pluginVersion: this.props.datasource.meta?.info?.version,
+  });
+
+  // versioned: false when the query is only refreshed after being opened, so the dashboard is not modified
+  onChange = (query: PIWebAPIQuery, versioned = true) => {
     const { onChange, onRunQuery } = this.props;
 
     if (query.rawQuery) {
@@ -1024,7 +1035,7 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
     }
     // END TODO
 
-    onChange({...query, summary});
+    onChange(versioned ? this.withVersion({ ...query, summary }) : { ...query, summary });
 
     if (this.isValidQuery(query)) {
       onRunQuery();
@@ -1085,7 +1096,7 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
 
   render() {
     const { query: queryProps, onChange, onRunQuery } = this.props;
-    const metricsQuery = defaults(queryProps, defaultQuery) as PIWebAPIQuery;
+    const metricsQuery = defaults({ ...queryProps }, defaultQuery) as PIWebAPIQuery;
     const {
       useLastValue,
       useUnit,

@@ -55,7 +55,7 @@ func (d *Datasource) processQuery(allQueries []backend.DataQuery, datasourceUID 
 			continue
 		}
 
-		PiQuery.Pi.migrateLegacySummary()
+		PiQuery.Pi.migrate()
 
 		// Determine if we are using units in the response.
 		// The front end doesn't guarantee that the UseUnit field will be set, so we need to check for nils
@@ -128,6 +128,7 @@ func (d *Datasource) processQuery(allQueries []backend.DataQuery, datasourceUID 
 				Variable:            target.Variable,
 				MultiVariable:       target.MultiVariable,
 				Index:               index,
+				PluginVersion:       PiQuery.Pi.PluginVersion,
 			}
 
 			WebID := d.getCachedWebID(fullTargetPath)
@@ -335,6 +336,9 @@ func (q *PiProcessedQuery) logFields() []any {
 	fields := []any{"RefID", q.RefID, "target", q.FullTargetPath, "status", q.Status, "error", q.Error, "hideError", q.HideError}
 	if q.WebID != "" {
 		fields = append(fields, "webId", q.WebID)
+	}
+	if q.PluginVersion != "" {
+		fields = append(fields, "savedByPluginVersion", q.PluginVersion)
 	}
 	if q.Resource != "" {
 		fields = append(fields, "request", strings.ReplaceAll(q.Resource, "{0}", q.WebID))

@@ -2,10 +2,8 @@ import {
   buildQueryString,
   firstVariableValue,
   formatVariableValue,
-  migrateLegacyQuery,
   removeServerPrefix,
 } from './helper';
-import { PIWebAPIQuery } from './types';
 
 describe('formatVariableValue', () => {
   it('keeps single values unchanged', () => {
@@ -64,53 +62,5 @@ describe('removeServerPrefix', () => {
   it('keeps targets without the prefix', () => {
     expect(removeServerPrefix('AFSIM\\DB\\E;Level')).toBe('AFSIM\\DB\\E;Level');
     expect(removeServerPrefix('')).toBe('');
-  });
-});
-
-describe('migrateLegacyQuery', () => {
-  const average = { label: 'Average', value: { value: 'Average', expandable: true } };
-  const legacy = (summary: object, extra: object = {}) =>
-    ({ refId: 'A', target: 'AF\\DB\\E;Level', summary, ...extra }) as unknown as PIWebAPIQuery;
-
-  it('enables the summary of a 4.x query with summary types, with its interval and bad data replacement', () => {
-    const query = legacy({ types: [average], basis: 'TimeWeighted', interval: ' 1h ', nodata: 'Previous' });
-    expect(migrateLegacyQuery(query)).toEqual({
-      refId: 'A',
-      target: 'AF\\DB\\E;Level',
-      nodata: 'Previous',
-      summary: { types: [average], basis: 'TimeWeighted', duration: '1h', enable: true },
-    });
-  });
-
-  it('enables the summary of a 4.x query re-saved by 5.1 or 5.2', () => {
-    const query = legacy({
-      enable: false,
-      duration: '',
-      types: [average],
-      basis: 'EventWeighted',
-      interval: '30m',
-      nodata: 'Drop',
-    });
-    const migrated = migrateLegacyQuery(query);
-    expect(migrated.summary).toEqual({ enable: true, duration: '30m', types: [average], basis: 'EventWeighted' });
-    expect(migrated.nodata).toBe('Drop');
-  });
-
-  it('keeps the summary disabled without summary types and keeps a newer bad data replacement', () => {
-    const migrated = migrateLegacyQuery(legacy({ types: [], interval: '', nodata: 'Zero' }, { nodata: 'Previous' }));
-    expect(migrated.summary).toEqual({ types: [], enable: false });
-    expect(migrated.nodata).toBe('Previous');
-  });
-
-  it('replaces the Null bad data replacement written by the query editor', () => {
-    const migrated = migrateLegacyQuery(legacy({ types: [], interval: '', nodata: 'Previous' }, { nodata: 'Null' }));
-    expect(migrated.nodata).toBe('Previous');
-  });
-
-  it('returns current queries unchanged', () => {
-    const query = legacy({ enable: false, duration: '1h', types: [average] }, { nodata: 'Null' });
-    expect(migrateLegacyQuery(query)).toBe(query);
-    const migrated = migrateLegacyQuery(legacy({ types: [average], interval: '1h' }));
-    expect(migrateLegacyQuery(migrated)).toBe(migrated);
   });
 });

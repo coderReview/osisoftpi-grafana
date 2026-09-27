@@ -93,6 +93,8 @@
 - Queries saved by versions 4.x and 5.0 keep their summary and "Replace Bad Data" settings - issue #194
   - their summary (enabled by selecting summary types, with the old "interval" period) was ignored since 5.1, returning raw values
   - "Replace Bad Data" saved inside the summary is moved to the query; opening such a panel in the query editor saves it in the current format
+- Saved queries now record their format version (`queryVersion`) and the plugin version that saved them (`pluginVersion`), so future format changes are converted reliably; see CONTRIBUTING.md
+- Opening a panel in the query editor no longer writes the editor defaults (e.g. "Replace Bad Data" = Null) into the saved query
 - Fixed "Replace Bad Data" = Previous failing the whole request (integer points, or a bad first value), and bad values of DateTime attributes being dropped instead of replaced
 - Fixed "Digital States" failing the whole request when a bad value (e.g. Shutdown) was returned; bad values now follow "Replace Bad Data", and numeric points whose last value is bad are no longer shown as digital states
 - An invalid query (e.g. a target without attribute) reports its error instead of silently dropping the queries after it in the same request
