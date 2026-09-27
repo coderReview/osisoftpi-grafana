@@ -201,7 +201,9 @@ func getValueType(Type string) reflect.Type {
 	case "Blob":
 		dataType = reflect.TypeOf([]byte{})
 	default:
-		dataType = reflect.TypeOf([]string{})
+		// "<Anything>" (empty type, e.g. AF links) or a type the plugin does not know: the type is taken
+		// from the values returned by PI Web API (see inferValueType)
+		dataType = nil
 	}
 	return dataType
 }
@@ -230,8 +232,8 @@ func (d *Datasource) getTypeForWebID(webID string) reflect.Type {
 			return entry.Type
 		}
 	}
-	// If the specified webID is not found in the webIDCache, return type of string.
-	return reflect.TypeOf([]string{})
+	// If the specified webID is not found in the webIDCache, the type is taken from the values.
+	return nil
 }
 
 func (d *Datasource) getDigitalStateForWebID(webID string) bool {

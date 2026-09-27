@@ -16,8 +16,10 @@ import (
 
 // fakeAttribute is an AF attribute (or PI point) known to fakePIWebAPI.
 type fakeAttribute struct {
-	units        string // DefaultUnitsName / EngineeringUnits returned by the WebID lookup
-	abbreviation string // UnitsAbbreviation returned with the values
+	units        string        // DefaultUnitsName / EngineeringUnits returned by the WebID lookup
+	abbreviation string        // UnitsAbbreviation returned with the values
+	valueType    *string       // Type returned by the WebID lookup; nil means "Double"
+	values       []interface{} // values returned for the stream; nil means 1.5 and 2.5
 }
 
 // fakePIWebAPI is a minimal PI Web API batch endpoint for backend tests. It resolves WebIDs by path,
@@ -96,9 +98,13 @@ func (f *fakePIWebAPI) resolve(req BatchSubRequest, done map[string]map[string]i
 				"Errors": []string{"The specified object was not found (path '" + path + "')."}}}
 		}
 		name := path[strings.LastIndexAny(path, `\|`)+1:]
+		valueType := "Double"
+		if attribute.valueType != nil {
+			valueType = *attribute.valueType
+		}
 		return map[string]interface{}{"Status": http.StatusOK, "Content": map[string]interface{}{
 			"WebId": "W" + base64.RawURLEncoding.EncodeToString([]byte(path)), "Name": name, "Path": path,
-			"Type": "Double", "PointType": "Float64", "DefaultUnitsName": attribute.units,
+			"Type": valueType, "PointType": "Float64", "DefaultUnitsName": attribute.units,
 			"EngineeringUnits": attribute.units, "Description": name}}
 	}
 
@@ -109,9 +115,18 @@ func (f *fakePIWebAPI) resolve(req BatchSubRequest, done map[string]map[string]i
 	}
 	path := string(raw)
 	now := time.Now().UTC().Truncate(time.Second)
-	items := []map[string]interface{}{
-		{"Timestamp": now.Add(-time.Minute).Format(time.RFC3339), "Value": 1.5, "Good": true, "UnitsAbbreviation": f.attributes[path].abbreviation},
-		{"Timestamp": now.Format(time.RFC3339), "Value": 2.5, "Good": true, "UnitsAbbreviation": f.attributes[path].abbreviation},
+	values := f.attributes[path].values
+	if values == nil {
+		values = []interface{}{1.5, 2.5}
+	}
+	items := make([]map[string]interface{}, 0, len(values))
+	for i, value := range values {
+		// system digital states (e.g. "Bad Input") are returned with Good=false, as by PI Web API
+		state, isState := value.(map[string]interface{})
+		good := !isState || state["IsSystem"] != true
+		items = append(items, map[string]interface{}{
+			"Timestamp": now.Add(time.Duration(i-len(values)) * time.Minute).Format(time.RFC3339), "Value": value,
+			"Good": good, "UnitsAbbreviation": f.attributes[path].abbreviation})
 	}
 	return map[string]interface{}{"Status": http.StatusOK, "Content": map[string]interface{}{"Links": map[string]interface{}{},
 		"Items": []map[string]interface{}{{"WebId": webID, "Name": path, "Path": path, "Links": map[string]interface{}{},

@@ -438,6 +438,9 @@ func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, Su
 
 	digitalStateValues := make([]string, 0)
 	sliceType := d.getTypeForWebID(webID)
+	if sliceType == nil {
+		sliceType = inferValueType(items)
+	}
 
 	fP := FrameProcessed{
 		sliceType:  sliceType,
@@ -593,6 +596,33 @@ func preferredUnits(responseUnits string, metadataUnits string) string {
 		return units
 	}
 	return strings.TrimSpace(metadataUnits)
+}
+
+// inferValueType returns the slice type for a stream whose value type is not declared ("<Anything>", e.g. AF
+// links) or not known to the plugin, based on the first good value returned by PI Web API. Bad values are
+// system digital states (e.g. "Bad Input") and are skipped, so they do not turn a numeric stream into a digital one.
+func inferValueType(items []PiBatchContentItem) reflect.Type {
+	for _, item := range items {
+		if item.Value == nil || !item.isGood() {
+			continue
+		}
+		switch value := item.Value.(type) {
+		case float64, float32, int, int32, int64:
+			return reflect.TypeOf([]float64{})
+		case bool:
+			return reflect.TypeOf([]bool{})
+		case string:
+			return reflect.TypeOf([]string{})
+		case map[string]interface{}:
+			if isSystem, _ := value["IsSystem"].(bool); isSystem {
+				continue
+			}
+			return reflect.TypeOf([]int32{}) // digital state
+		default:
+			return reflect.TypeOf([]string{})
+		}
+	}
+	return reflect.TypeOf([]float64{})
 }
 
 func getTimeStamp(input reflect.Value) (reflect.Value, error) {
