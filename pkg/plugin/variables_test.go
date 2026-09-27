@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -183,5 +184,32 @@ func TestProcessQueryExpandsVariables(t *testing.T) {
 	last := processed[8]
 	if last.RefID != "B" || !errors.Is(last.Error, errTooManyTargets) {
 		t.Errorf("expected too many targets error for B, got %+v", last)
+	}
+}
+
+// The target limit must be enforced before the combinations are built: three "All" variables of 100 values
+// are a million combinations, which used to be allocated in full (~150 MB) only to return the error.
+func TestGetExpandedTargetsLimitWithoutExpanding(t *testing.T) {
+	values := make([]string, 100)
+	for i := range values {
+		values[i] = fmt.Sprintf("V%d", i)
+	}
+	group := "{" + strings.Join(values, ",") + "}"
+	q := newVariablesTestQuery(`AF\DB\`+group+`\`+group+`\`+group, "Temp")
+
+	var before, after runtime.MemStats
+	runtime.GC()
+	runtime.ReadMemStats(&before)
+	_, err := q.getExpandedTargets()
+	runtime.ReadMemStats(&after)
+
+	if !errors.Is(err, errTooManyTargets) {
+		t.Fatalf("expected errTooManyTargets, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "1000000 targets") {
+		t.Errorf("error should report the number of targets: %v", err)
+	}
+	if allocated := after.TotalAlloc - before.TotalAlloc; allocated > 1<<20 {
+		t.Errorf("allocated %d MB before rejecting the query", allocated>>20)
 	}
 }
