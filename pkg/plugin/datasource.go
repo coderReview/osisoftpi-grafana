@@ -3,7 +3,6 @@ package plugin
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -171,13 +170,6 @@ func (d *Datasource) QueryTSData(ctx context.Context, req *backend.QueryDataRequ
 
 	// Convert the PI Web API response into Grafana frames
 	response := d.processBatchtoFrames(processedQueries_temp)
-
-	// Queries that expand into too many targets are not sent to the PI Web API; report the error on the query
-	for _, q := range processedPIWebAPIQueries {
-		if q.RefID != "" && errors.Is(q.Error, errTooManyTargets) {
-			response.Responses[q.RefID] = backend.ErrDataResponse(backend.StatusBadRequest, q.Error.Error())
-		}
-	}
 
 	// span
 	span.AddEvent("Completed processing batch to frames")

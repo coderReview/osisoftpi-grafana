@@ -27,8 +27,8 @@ type BatchSubRequestMap map[string]BatchSubRequest
 
 // processQuery is the main function for processing queries. It takes a query and returns a slice of PiProcessedQuery
 // that contains batched queries that are ready to be sent to the PI Web API.
-// If there is an error, the error is set in the PiProcessedQuery and the slice is returned, the error propogates through
-// the rest of the processing chain such that a dataframe with metadata is returned to the user to provide feedback to the user.
+// A query that cannot be processed gets a PiProcessedQuery with its RefID and the error, which is reported on
+// that query's response; the other queries are processed normally.
 func (d *Datasource) processQuery(allQueries []backend.DataQuery, datasourceUID string) []PiProcessedQuery {
 	var ProcessedQuery []PiProcessedQuery
 
@@ -38,24 +38,21 @@ func (d *Datasource) processQuery(allQueries []backend.DataQuery, datasourceUID 
 
 		// Unmarshal the query into a PiQuery struct, and then unmarshal the PiQuery into a PiProcessedQuery
 		// if there are errors we'll set the error and return the PiProcessedQuery with an error set.
+		invalid := func(err error) {
+			ProcessedQuery = append(ProcessedQuery, PiProcessedQuery{RefID: query.RefID, Error: err, Status: http.StatusBadRequest})
+		}
 		tempJson, err := json.Marshal(query)
 		if err != nil {
 			log.DefaultLogger.Error("Process query - Error marshalling", "error", err)
-			piQuery := PiProcessedQuery{
-				Error: fmt.Errorf("error while processing the query"),
-			}
-			ProcessedQuery = append(ProcessedQuery, piQuery)
-			return ProcessedQuery
+			invalid(fmt.Errorf("error while processing the query"))
+			continue
 		}
 
 		err = json.Unmarshal(tempJson, &PiQuery)
 		if err != nil {
 			log.DefaultLogger.Error("Process query - Error unmarshalling", "error", err, "json", string(tempJson))
-			piQuery := PiProcessedQuery{
-				Error: fmt.Errorf("error while processing the query"),
-			}
-			ProcessedQuery = append(ProcessedQuery, piQuery)
-			return ProcessedQuery
+			invalid(fmt.Errorf("error while processing the query: %w", err))
+			continue
 		}
 
 		// Determine if we are using units in the response.
@@ -77,11 +74,8 @@ func (d *Datasource) processQuery(allQueries []backend.DataQuery, datasourceUID 
 		// if the query is empty, we'll return a PiProcessedQuery with an error set.
 		err = PiQuery.isValidQuery()
 		if err != nil {
-			piQuery := PiProcessedQuery{
-				Error: err,
-			}
-			ProcessedQuery = append(ProcessedQuery, piQuery)
-			return ProcessedQuery
+			invalid(err)
+			continue
 		}
 
 		// At this point we expect that the query is valid, so we can start processing it.
@@ -90,10 +84,7 @@ func (d *Datasource) processQuery(allQueries []backend.DataQuery, datasourceUID 
 		targets, err := PiQuery.Pi.getExpandedTargets()
 		if err != nil {
 			log.DefaultLogger.Warn("Process query - Error expanding template variables", "RefID", PiQuery.RefID, "error", err)
-			ProcessedQuery = append(ProcessedQuery, PiProcessedQuery{
-				RefID: PiQuery.RefID,
-				Error: err,
-			})
+			invalid(err)
 			continue
 		}
 
@@ -175,14 +166,30 @@ func (d *Datasource) processQuery(allQueries []backend.DataQuery, datasourceUID 
 	return ProcessedQuery
 }
 
+// batchRequest sends the processed queries to the PI Web API and groups them by RefID. Queries that already have
+// an error (they could not be processed) are not sent, and are returned with their error.
 func (d *Datasource) batchRequest(ctx context.Context, PIWebAPIQueriesAll []PiProcessedQuery) map[string][]PiProcessedQuery {
+	valid := make([]PiProcessedQuery, 0, len(PIWebAPIQueriesAll))
+	var invalid []PiProcessedQuery
+	for _, piQuery := range PIWebAPIQueriesAll {
+		if piQuery.Error != nil {
+			invalid = append(invalid, piQuery)
+		} else {
+			valid = append(valid, piQuery)
+		}
+	}
+	PIWebAPIQueries := d.sendBatch(ctx, valid)
+	for _, piQuery := range invalid {
+		PIWebAPIQueries[piQuery.RefID] = append(PIWebAPIQueries[piQuery.RefID], piQuery)
+	}
+	return PIWebAPIQueries
+}
+
+func (d *Datasource) sendBatch(ctx context.Context, PIWebAPIQueriesAll []PiProcessedQuery) map[string][]PiProcessedQuery {
 	batchRequest := make(map[string]BatchSubRequest)
 	PIWebAPIQueries := make(map[string][]PiProcessedQuery)
 	// create a map of the batch requests. This allows us to map the response back to the original query
 	for _, piQuery := range PIWebAPIQueriesAll {
-		if piQuery.Error != nil {
-			continue
-		}
 		for key, request := range piQuery.BatchRequest {
 			batchRequest[key] = request
 		}

@@ -90,6 +90,7 @@
 - AF attributes with the value type `<Anything>` (e.g. AF links) or a type unknown to the plugin take the type of their values, instead of being read as text ("Data is missing a number field") - issue #173
 - Fixed "Replace Bad Data" = Previous failing the whole request (integer points, or a bad first value), and bad values of DateTime attributes being dropped instead of replaced
 - Fixed "Digital States" failing the whole request when a bad value (e.g. Shutdown) was returned; bad values now follow "Replace Bad Data", and numeric points whose last value is bad are no longer shown as digital states
+- An invalid query (e.g. a target without attribute) reports its error instead of silently dropping the queries after it in the same request
 - Minimum supported Grafana version is now 11.6.0; tested against Grafana 11.6, 12.x and 13.x
 - Updated plugin scaffolding to `@grafana/create-plugin` 7.11 (dynamic public path, subresource integrity, ESLint 9)
 - Updated frontend packages to `@grafana/*` 12.x
