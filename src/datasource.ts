@@ -11,10 +11,11 @@ import {
   DataFrame,
   DataQueryRequest,
   DataQueryResponse,
+  SelectableValue,
 } from '@grafana/data';
 import { getTemplateSrv, TemplateSrv, DataSourceWithBackend } from '@grafana/runtime';
 
-import { PIWebAPIQuery, PIWebAPIDataSourceJsonData, PiDataServer, PiwebapiRsp } from './types';
+import { PIWebAPIQuery, PIWebAPIDataSourceJsonData, PIWebAPISelectableValue, PiDataServer, PiwebapiRsp } from './types';
 import {
   buildQueryString,
   firstVariableValue,
@@ -224,34 +225,25 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
     if (options.maxDataPoints) {
       options.maxDataPoints = options.maxDataPoints > 30000 ? 30000 : options.maxDataPoints;
     }
+    // copies a segment or attribute with its template variables replaced, so the saved query keeps the variables
+    const replaceSegment = (segment: SelectableValue<PIWebAPISelectableValue>) =>
+      segment.value
+        ? {
+            ...segment,
+            value: {
+              ...segment.value,
+              value: this.templateSrv.replace(segment.value.value, options.scopedVars, formatVariableValue),
+            },
+          }
+        : segment;
+
     options.targets = map(options.targets, (target) => {
       const tar = {
         enableStreaming: target.enableStreaming,
         target: this.templateSrv.replace(target.target, options.scopedVars, formatVariableValue),
         elementPath: this.templateSrv.replace(target.elementPath, options.scopedVars, formatVariableValue),
-        // copy the attributes and segments so the saved query keeps its template variables
-        attributes: map(target.attributes, (att) =>
-          att.value
-            ? {
-                ...att,
-                value: {
-                  ...att.value,
-                  value: this.templateSrv.replace(att.value.value, options.scopedVars, formatVariableValue),
-                },
-              }
-            : att
-        ),
-        segments: map(target.segments, (att) =>
-          att.value
-            ? {
-                ...att,
-                value: {
-                  ...att.value,
-                  value: this.templateSrv.replace(att.value.value, options.scopedVars, formatVariableValue),
-                },
-              }
-            : att
-        ),
+        attributes: map(target.attributes, replaceSegment),
+        segments: map(target.segments, replaceSegment),
         isAnnotation: !!target.isAnnotation,
         display: !!target.display ? this.templateSrv.replace(target.display, options.scopedVars) : undefined,
         refId: target.refId,
@@ -269,7 +261,7 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
         webid: target.webid ?? '',
         regex: target.regex || { enable: false },
         expression: target.expression || '',
-        summary: target.summary || { enable: false, types: [] },
+        summary: { ...(target.summary || { enable: false, types: [] }) },
         nodata: target.nodata,
         startTime: options.range.from,
         endTime: options.range.to,

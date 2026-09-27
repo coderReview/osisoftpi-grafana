@@ -79,7 +79,7 @@
   - multi-value variables in attributes and PI points expand into one attribute or point per value
   - a query can expand into at most 1000 element/attribute combinations
   - fixed the query editor dropping attributes that use a multi-value variable
-  - fixed queries overwriting the template variables saved in the panel
+  - fixed queries overwriting the template variables saved in the panel (attributes, elements and summary settings)
 - Fixed backend panics on queries without the optional `recordedValues` or `summary` settings, and on an invalid regex - issue #209
 - Attributes and PI points are read from the query target when the query has no attributes list (API calls, hand-written queries) - issue #209
 - Fixed AF elements, attributes and PI points with `#`, `&`, `+`, `%` or spaces in their names not returning data; calculation expressions and event frame filters are encoded too - issue #186
