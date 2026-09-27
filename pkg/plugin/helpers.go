@@ -443,7 +443,7 @@ func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, Su
 	digitalStates := processedQuery.DigitalStates
 	noDataReplace := processedQuery.getNoDataReplace()
 
-	digitalStateValues := make([]string, 0)
+	stateNames := map[int64]string{} // digital state code -> name, from the good values
 	sliceType := d.getTypeForWebID(webID)
 	if sliceType == nil {
 		sliceType = inferValueType(items)
@@ -464,7 +464,7 @@ func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, Su
 		d.getDescriptionForWebID(webID), units, SummaryType)
 
 	var labels map[string]string
-	var digitalState = d.getDigitalStateForWebID(webID)
+	digitalState := d.getDigitalStateForWebID(webID)
 
 	frame := data.NewFrame("")
 	if d.isUsingNewFormat() {
@@ -504,15 +504,16 @@ func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, Su
 			}
 		}
 
-		_, digitalState = item.Value.(map[string]interface{})
-		if !item.isGood() {
+		_, isState := item.Value.(map[string]interface{})
+		if !item.isGood() { // bad values are system states such as "Shutdown"
 			fP = updateBadData(fP, item.Timestamp, noDataReplace)
-		} else if digitalState { // digital state
+		} else if isState { // digital state
 			var pds PointDigitalState
 			if b, err := json.Marshal(item.Value); err == nil {
 				if err := json.Unmarshal(b, &pds); err == nil {
 					fP.timestamps = append(fP.timestamps, item.Timestamp)
-					digitalStateValues = append(digitalStateValues, pds.Name)
+					stateNames[int64(pds.Value)] = pds.Name
+					digitalState = true
 					pdsValue := reflect.ValueOf(pds.Value)
 					itemValue := pdsValue.Convert(fP.sliceType.Elem())
 					fP.values = reflect.Append(reflect.ValueOf(fP.values), itemValue).Interface()
@@ -572,21 +573,13 @@ func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, Su
 			Description: d.getDescriptionForWebID(webID),
 		}
 	}
-	if !digitalState || !digitalStates {
-		valueField := data.NewField(frameLabel["name"], labels, valuepointers)
-		valueField.SetConfig(fieldConfig)
-		frame.Fields = append(frame.Fields,
-			timeField,
-			valueField,
-		)
-	} else {
-		valueField := data.NewField(frameLabel["name"], labels, digitalStateValues)
-		valueField.SetConfig(fieldConfig)
-		frame.Fields = append(frame.Fields,
-			timeField,
-			valueField,
-		)
+	values := valuepointers
+	if digitalState && digitalStates {
+		values = digitalStateNames(fP.values, fP.badValues, stateNames)
 	}
+	valueField := data.NewField(frameLabel["name"], labels, values)
+	valueField.SetConfig(fieldConfig)
+	frame.Fields = append(frame.Fields, timeField, valueField)
 
 	// create a metadata struct for the frame so we can set it later.
 	frame.Meta = &data.FrameMeta{
@@ -632,6 +625,35 @@ func inferValueType(items []PiBatchContentItem) reflect.Type {
 		}
 	}
 	return reflect.TypeOf([]float64{})
+}
+
+// digitalStateNames returns the state name of each digital state code in values, or nil for a bad value (or a
+// code without a known name). It has one entry per value, so the frame fields keep the same length.
+func digitalStateNames(values any, badValues []int, stateNames map[int64]string) []*string {
+	bad := make(map[int]bool, len(badValues))
+	for _, i := range badValues {
+		bad[i] = true
+	}
+	v := reflect.ValueOf(values)
+	names := make([]*string, v.Len())
+	for i := range names {
+		if bad[i] {
+			continue
+		}
+		var code int64
+		switch e := v.Index(i); e.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			code = e.Int()
+		case reflect.Float32, reflect.Float64:
+			code = int64(e.Float())
+		default:
+			continue
+		}
+		if name, ok := stateNames[code]; ok {
+			names[i] = &name
+		}
+	}
+	return names
 }
 
 func getTimeStamp(input reflect.Value) (reflect.Value, error) {

@@ -54,7 +54,7 @@ func TestAttributeValueTypeFromValues(t *testing.T) {
 		{attribute: "Anything text", wantType: data.FieldTypeNullableString, want: []interface{}{"Open", "Closed"}},
 		{attribute: "Anything bool", wantType: data.FieldTypeNullableBool, want: []interface{}{true, false}},
 		{attribute: "Anything state", wantType: data.FieldTypeNullableInt32, want: []interface{}{int32(1), int32(0)}},
-		{attribute: "Anything state", digitalStates: true, wantType: data.FieldTypeString, want: []interface{}{"Running", "Stopped"}},
+		{attribute: "Anything state", digitalStates: true, wantType: data.FieldTypeNullableString, want: []interface{}{"Running", "Stopped"}},
 		{attribute: "Anything bad first", wantType: data.FieldTypeNullableFloat64, want: []interface{}{nil, 2.5}},
 		// some PI Web API versions report <Anything> as the type name "Anything" instead of an empty type
 		{attribute: "Anything named", wantType: data.FieldTypeNullableFloat64, want: []interface{}{2.0}},
