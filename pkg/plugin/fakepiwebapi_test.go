@@ -20,6 +20,7 @@ type fakeAttribute struct {
 	abbreviation string        // UnitsAbbreviation returned with the values
 	valueType    *string       // Type returned by the WebID lookup; nil means "Double"
 	values       []interface{} // values returned for the stream; nil means 1.5 and 2.5
+	dataStatus   int           // when set, the data request (not the WebID lookup) fails with this status
 }
 
 // fakePIWebAPI is a minimal PI Web API batch endpoint for backend tests. It resolves WebIDs by path,
@@ -114,6 +115,10 @@ func (f *fakePIWebAPI) resolve(req BatchSubRequest, done map[string]map[string]i
 		return map[string]interface{}{"Status": http.StatusBadRequest, "Content": map[string]interface{}{"Errors": []string{"bad webId"}}}
 	}
 	path := string(raw)
+	if status := f.attributes[path].dataStatus; status != 0 {
+		return map[string]interface{}{"Status": status, "Content": map[string]interface{}{
+			"Errors": []string{"The requested time range is not valid."}}}
+	}
 	now := time.Now().UTC().Truncate(time.Second)
 	values := f.attributes[path].values
 	if values == nil {

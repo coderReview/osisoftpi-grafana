@@ -294,7 +294,7 @@ func (d *Datasource) sendBatch(ctx context.Context, PIWebAPIQueriesAll []PiProce
 						continue
 					}
 					if errorResponse.Error != nil && len(errorResponse.Error.Errors) > 0 {
-						PIWebAPIQueries[RefID][i].Error = fmt.Errorf("api error %d - %s", WebIdData.Status, errorResponse.Error.Errors[0])
+						PIWebAPIQueries[RefID][i].Error = fmt.Errorf("api error %d - %s", ResponseData.Status, errorResponse.Error.Errors[0])
 					} else {
 						PIWebAPIQueries[RefID][i].Error = fmt.Errorf("unknown api error")
 					}
