@@ -54,6 +54,11 @@ export function firstVariableValue(path: string): string {
   );
 }
 
+/** Removes the leading `\\` of a UNC-style target (`\\AFServer\DB\Element;Attr`): the backend adds it. */
+export function removeServerPrefix(target: string): string {
+  return target.replace(/^\\+/, '');
+}
+
 export function removeTime(s: any): string {
   const temp = Object.assign({}, s);
   delete temp.startTime;

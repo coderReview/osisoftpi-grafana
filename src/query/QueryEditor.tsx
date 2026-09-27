@@ -8,7 +8,7 @@ import { PiWebAPIDatasource } from '../datasource';
 import { QueryInlineField, QueryRawInlineField, QueryRowTerminator } from '../components/Forms';
 import { PIWebAPISelectableValue, PIWebAPIDataSourceJsonData, PIWebAPIQuery, defaultQuery } from '../types';
 import { QueryEditorModeSwitcher } from 'components/QueryEditorModeSwitcher';
-import { parseRawQuery, getSummaryTypes } from 'helper';
+import { parseRawQuery, getSummaryTypes, removeServerPrefix } from 'helper';
 
 const LABEL_WIDTH = 24;
 const LABEL_SWITCH_WIDTH = 49.067 / 8.0;
@@ -993,7 +993,7 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
     const { onChange, onRunQuery } = this.props;
 
     if (query.rawQuery) {
-      query.target = query.query ?? '';
+      query.target = removeServerPrefix(query.query ?? '');
       if (!!query.query) {
         const { attributes, elementPath } = parseRawQuery(query.target);
         query.attributes = attributes;

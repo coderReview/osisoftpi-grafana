@@ -94,6 +94,7 @@
 - Fixed "Digital States" failing the whole request when a bad value (e.g. Shutdown) was returned; bad values now follow "Replace Bad Data", and numeric points whose last value is bad are no longer shown as digital states
 - An invalid query (e.g. a target without attribute) reports its error instead of silently dropping the queries after it in the same request
 - In PI point mode, the PI server set in the datasource configuration is preselected and is the only server offered
+- Targets written with a leading `\\` (e.g. `\\AFServer\Database\Element;Attribute`) in raw queries or saved dashboards are sent without it, as the backend adds it
 - Each failing target is logged once with its RefID, target, status, error and the PI Web API requests sent for it (the raw error response is logged at debug level)
 - Fewer lookups and allocations per query: no batch request is sent when every query is invalid, and the WebID metadata is read once per series
 - Minimum supported Grafana version is now 11.6.0; tested against Grafana 11.6, 12.x and 13.x

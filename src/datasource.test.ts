@@ -69,3 +69,14 @@ describe('buildQueryParameters', () => {
     expect(target).toEqual(saved);
   });
 });
+
+describe('applyTemplateVariables', () => {
+  it('removes the leading backslashes of a saved UNC-style target', () => {
+    const ds = new PiWebAPIDatasource(
+      { jsonData: {}, uid: 'pi' } as unknown as DataSourceInstanceSettings<PIWebAPIDataSourceJsonData>,
+      templateSrv
+    );
+    const query = ds.applyTemplateVariables({ refId: 'A', target: '\\\\AF\\DB\\$elem;$attr' } as PIWebAPIQuery, {});
+    expect(query.target).toBe('AF\\DB\\T-101;Level');
+  });
+});

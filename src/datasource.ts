@@ -23,6 +23,7 @@ import {
   getSummaryTypes,
   hashCode,
   metricQueryTransform,
+  removeServerPrefix,
   removeTime,
 } from 'helper';
 
@@ -94,7 +95,9 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
   applyTemplateVariables(query: PIWebAPIQuery, scopedVars: ScopedVars) {
     return {
       ...query,
-      target: query.target ? this.templateSrv.replace(query.target, scopedVars, formatVariableValue) : '',
+      target: query.target
+        ? removeServerPrefix(this.templateSrv.replace(query.target, scopedVars, formatVariableValue))
+        : '',
     };
   }
 

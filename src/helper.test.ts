@@ -1,4 +1,4 @@
-import { buildQueryString, firstVariableValue, formatVariableValue } from './helper';
+import { buildQueryString, firstVariableValue, formatVariableValue, removeServerPrefix } from './helper';
 
 describe('formatVariableValue', () => {
   it('keeps single values unchanged', () => {
@@ -45,5 +45,17 @@ describe('buildQueryString', () => {
   it('skips empty values', () => {
     expect(buildQueryString({ nameFilter: undefined, maxCount: 100, selectedFields: '' })).toBe('?maxCount=100');
     expect(buildQueryString({})).toBe('');
+  });
+});
+
+describe('removeServerPrefix', () => {
+  it('removes the leading backslashes of a UNC-style target', () => {
+    expect(removeServerPrefix('\\\\AFSIM\\DB\\E;Level')).toBe('AFSIM\\DB\\E;Level');
+    expect(removeServerPrefix('\\\\PISIM;T-101.Level')).toBe('PISIM;T-101.Level');
+  });
+
+  it('keeps targets without the prefix', () => {
+    expect(removeServerPrefix('AFSIM\\DB\\E;Level')).toBe('AFSIM\\DB\\E;Level');
+    expect(removeServerPrefix('')).toBe('');
   });
 });
