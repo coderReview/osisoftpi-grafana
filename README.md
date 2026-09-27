@@ -70,7 +70,7 @@ Multi-value variables (and the `All` option) are expanded into one series for ev
   Every combination of the selected values is queried.
 - A variable used as an attribute (e.g. `${attribute}`) or as a PI point name expands into one attribute or point per value.
 - Element and attribute variables are combined, so `${site}` (2 values) x `${unit}` (2 values) x `${attribute}` (2 values) returns 8 series.
-- When the element path uses more than one variable, series are named after the selected values, e.g. `SiteA\Unit2|Temperature`.
+- When the element path uses more than one variable, series are named after the element path below the database and the attribute, e.g. `SiteA\Unit2\Pump|Temperature`. With "Enable New Data Format", AF series have `database` and `path` (element path below the database) labels.
 - A single query can expand into at most 1000 element/attribute combinations; larger expansions return an error.
 
 Variables with a custom `All` value are sent as that value and are not expanded.

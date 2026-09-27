@@ -78,6 +78,7 @@
   - more than one multi-value variable can be used in the element path; every combination is queried
   - multi-value variables in attributes and PI points expand into one attribute or point per value
   - a query can expand into at most 1000 element/attribute combinations
+  - series of a path with several variables are named after the element path below the database (e.g. `SiteA\Unit2\Pump|Flow`); with the new data format, AF series have `database` and `path` labels
   - fixed the query editor dropping attributes that use a multi-value variable
   - fixed queries overwriting the template variables saved in the panel (attributes, elements and summary settings)
 - Fixed backend panics on queries without the optional `recordedValues` or `summary` settings, and on an invalid regex - issue #209

@@ -112,7 +112,8 @@ func TestGetExpandedTargetsLimit(t *testing.T) {
 
 func TestDataLabelsWithVariables(t *testing.T) {
 	multi := &PiProcessedQuery{
-		Label: "Temperature", FullTargetPath: `\\AF\DB\S1\U2|Temperature`, Variable: `S1\U2`, MultiVariable: true,
+		Label: "Temperature", FullTargetPath: `\\AF\DB\S1\U2|Temperature`, TargetPath: `\\AF\DB\S1\U2`,
+		Variable: `S1\U2`, MultiVariable: true,
 	}
 	if got := getDataLabels(false, multi, "Float32", "", "", "")["name"]; got != `S1\U2|Temperature` {
 		t.Errorf("multi-variable label = %q", got)

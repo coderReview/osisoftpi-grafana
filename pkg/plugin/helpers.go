@@ -383,9 +383,9 @@ func getDataLabels(useNewFormat bool, q *PiProcessedQuery, pointType string, des
 		label = q.Label + summaryLabel
 	} else {
 		targetParts := strings.Split(q.FullTargetPath, `\`)
-		if q.MultiVariable {
-			// e.g. SiteA\Unit2|Temperature
-			label = q.Variable + "|" + q.Label
+		if _, elementPath := afDatabaseAndPath(q.TargetPath); q.MultiVariable && elementPath != "" {
+			// e.g. SiteA\Unit2\Pump|Flow
+			label = elementPath + "|" + q.Label
 		} else if q.Variable != "" {
 			label = q.Variable + "|" + targetParts[len(targetParts)-1]
 		} else {
@@ -410,7 +410,10 @@ func getDataLabels(useNewFormat bool, q *PiProcessedQuery, pointType string, des
 		// Element|Attribute {element="Element", name="Attribute", type="Single"}
 		targetParts := strings.Split(q.FullTargetPath, `\`)
 		labelParts := strings.SplitN(targetParts[len(targetParts)-1], "|", 2)
+		database, elementPath := afDatabaseAndPath(q.TargetPath)
 		frameLabel = map[string]string{
+			"database":    database,
+			"path":        elementPath,
 			"element":     labelParts[0],
 			"name":        label,
 			"type":        pointType + summaryNewFormat,
@@ -654,6 +657,19 @@ func digitalStateNames(values any, badValues []int, stateNames map[int64]string)
 		}
 	}
 	return names
+}
+
+// afDatabaseAndPath splits an AF element path (server\database\element\...) into the database name and the
+// element path below the database.
+func afDatabaseAndPath(targetPath string) (database string, elementPath string) {
+	parts := strings.SplitN(strings.TrimLeft(targetPath, `\`), `\`, 3)
+	if len(parts) > 1 {
+		database = parts[1]
+	}
+	if len(parts) > 2 {
+		elementPath = parts[2]
+	}
+	return database, elementPath
 }
 
 func getTimeStamp(input reflect.Value) (reflect.Value, error) {
