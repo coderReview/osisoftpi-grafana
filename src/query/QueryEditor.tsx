@@ -377,7 +377,7 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
 
       // Accept only one PI server
       if (query.isPiPoint) {
-        this.piServer.push(item);
+        this.piServer = [item];
         this.segmentChangeValue(segments);
         return;
       }
@@ -432,6 +432,9 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
           afServerWebId: this.state.segments.length > 0 && this.state.segments[0].value ? this.state.segments[0].value.webId : undefined,
         };
 
+    if (query.isPiPoint && datasource.piserver?.name) {
+      return Promise.resolve(this.checkPiServer());
+    }
     if (!query.isPiPoint) {
       if (datasource.afserver?.name && index === 0) {
         return Promise.resolve([
@@ -769,18 +772,10 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
    * @memberOf PIWebAPIQueryEditor
    */
   getSelectedPIServer() {
-    let webID = '';
-
-    this.piServer.forEach((s) => {
-      const parts = this.props.query.target!.split(';');
-      if (parts.length >= 2) {
-        if (parts[0] === s.text) {
-          webID = s.WebId;
-          return;
-        }
-      }
-    });
-    return this.piServer.length > 0 ? this.piServer[0].value?.webId : webID;
+    const { piserver } = this.props.datasource;
+    const webId = this.piServer[0]?.value?.webId;
+    // the configured server's WebId is looked up when the datasource is created
+    return piserver?.name ? piserver.webid ?? webId : webId;
   }
 
   /**
@@ -857,6 +852,17 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
       });
     }
   }
+
+  /**
+   * Returns the PI server segment: the server configured in the datasource, or an empty segment to select one.
+   */
+  checkPiServer = (): Array<SelectableValue<PIWebAPISelectableValue>> => {
+    const { piserver } = this.props.datasource;
+    if (!piserver?.name) {
+      return [{ label: '' }];
+    }
+    return [{ label: piserver.name, value: { value: piserver.name, webId: piserver.webid } }];
+  };
 
   /**
    * Check if the AF server and database are configured in the datasoure config.
@@ -972,8 +978,11 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
       } else {
         segmentsArray = this.checkAfServer();
       }
-    } else if (isPiPoint && segmentsArray.length > 0) {
-      this.piServer = segmentsArray;
+    } else if (isPiPoint) {
+      if (this.props.datasource.piserver?.name || !segmentsArray.some((s) => s.label)) {
+        segmentsArray = this.checkPiServer();
+      }
+      this.piServer = segmentsArray.filter((s) => s.label);
     }
     this.updateArray(segmentsArray, attributesArray, summariesArray, !!isPiPoint, () => {
       this.onChange(query);
@@ -1036,9 +1045,10 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
   onIsPiPointChange = (event: React.SyntheticEvent<HTMLInputElement>) => {
     const { query: queryChange } = this.props;
     const isPiPoint = !queryChange.isPiPoint;
+    this.piServer = isPiPoint ? this.checkPiServer().filter((s) => s.label) : [];
     this.setState(
       {
-        segments: isPiPoint ? [{ label: '' }] : this.checkAfServer(),
+        segments: isPiPoint ? this.checkPiServer() : this.checkAfServer(),
         attributes: [],
         isPiPoint,
       },

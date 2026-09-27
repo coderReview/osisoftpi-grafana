@@ -209,7 +209,7 @@ func (d *Datasource) sendStreamMessagesToSender(ctx context.Context, WebID strin
 				// backend.Logger.Info("Error unmarshalling message:", err)
 				continue
 			}
-			framedata, _ := convertItemsToDataFrame(query, d, "")
+			framedata := convertItemsToDataFrame(query, d, "")
 			d.datasourceMutex.Lock()
 			specsender := d.sendersByWebID[WebID]
 			for s := range specsender {

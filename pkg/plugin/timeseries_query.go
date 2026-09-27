@@ -88,9 +88,19 @@ func (d *Datasource) processQuery(allQueries []backend.DataQuery, datasourceUID 
 			continue
 		}
 
+		baseUrl := d.settings.URL
+		if !strings.HasSuffix(baseUrl, "/") {
+			baseUrl += "/"
+		}
+		queryBaseURL := baseUrl + PiQuery.getQueryBaseURL()
+		streamable := PiQuery.isStreamable() && d.isUsingStreaming()
+		startTime := PiQuery.TimeRange.From.Truncate(time.Second)
+		endTime := PiQuery.TimeRange.To.Truncate(time.Second)
+		separator := PiQuery.Pi.getTargetPathSeparator()
+
 		for _, target := range targets {
 			targetBasePath := target.BasePath
-			fullTargetPath := targetBasePath + PiQuery.Pi.getTargetPathSeparator() + target.Attribute
+			fullTargetPath := targetBasePath + separator + target.Attribute
 			// Index is unique within the request and is used to build the batch request keys
 			index++
 			// Create a processed query for the target
@@ -101,7 +111,7 @@ func (d *Datasource) processQuery(allQueries []backend.DataQuery, datasourceUID 
 				IntervalNanoSeconds: PiQuery.Interval,
 				IsPIPoint:           PiQuery.Pi.IsPiPoint,
 				HideError:           PiQuery.Pi.HideError,
-				Streamable:          PiQuery.isStreamable() && d.isUsingStreaming(),
+				Streamable:          streamable,
 				FullTargetPath:      fullTargetPath,
 				TargetPath:          targetBasePath,
 				UseUnit:             UseUnit,
@@ -111,8 +121,8 @@ func (d *Datasource) processQuery(allQueries []backend.DataQuery, datasourceUID 
 				Nodata:              PiQuery.Pi.Nodata,
 				Summary:             PiQuery.Pi.Summary,
 				HashCode:            PiQuery.Pi.HashCode + "_" + fullTargetPath,
-				StartTime:           PiQuery.TimeRange.From.Truncate(time.Second),
-				EndTime:             PiQuery.TimeRange.To.Truncate(time.Second),
+				StartTime:           startTime,
+				EndTime:             endTime,
 				Variable:            target.Variable,
 				MultiVariable:       target.MultiVariable,
 				Index:               index,
@@ -123,17 +133,13 @@ func (d *Datasource) processQuery(allQueries []backend.DataQuery, datasourceUID 
 			// initialize maps
 			piQuery.BatchRequest = make(map[string]BatchSubRequest)
 
-			var baseUrl = d.settings.URL
-			if !strings.HasSuffix(baseUrl, "/") {
-				baseUrl = baseUrl + "/"
-			}
 			dataId := fmt.Sprintf("%s_Req%d_Data", piQuery.RefID, piQuery.Index)
 			if WebID != nil && WebID.WebID != "" {
 				piQuery.WebID = WebID.WebID
 				// DATA FETCH
 				batchSubRequest := BatchSubRequest{
 					Method:   "GET",
-					Resource: baseUrl + PiQuery.getQueryBaseURL() + WebID.WebID,
+					Resource: queryBaseURL + WebID.WebID,
 					Headers: map[string]string{
 						"Asset-Path": fullTargetPath,
 					},
@@ -153,7 +159,7 @@ func (d *Datasource) processQuery(allQueries []backend.DataQuery, datasourceUID 
 					Method:     "GET",
 					ParentIds:  []string{parentId},
 					Parameters: []string{parameter},
-					Resource:   baseUrl + PiQuery.getQueryBaseURL() + "{0}",
+					Resource:   queryBaseURL + "{0}",
 				}
 				piQuery.Resource = batchSubRequest.Resource
 				piQuery.BatchRequest[dataId] = batchSubRequest
@@ -195,6 +201,10 @@ func (d *Datasource) sendBatch(ctx context.Context, PIWebAPIQueriesAll []PiProce
 		}
 		piQuery.Cached = false
 		PIWebAPIQueries[piQuery.RefID] = append(PIWebAPIQueries[piQuery.RefID], piQuery)
+	}
+
+	if len(batchRequest) == 0 {
+		return PIWebAPIQueries
 	}
 
 	// request the data from the PI Web API
@@ -242,7 +252,9 @@ func (d *Datasource) sendBatch(ctx context.Context, PIWebAPIQueriesAll []PiProce
 				if WebIdData.Status == http.StatusOK {
 					PIWebAPIQueries[RefID][i].WebID = d.saveWebID(WebIdData.Content, query.FullTargetPath, query.IsPIPoint)
 				} else {
-					backend.Logger.Error("Batch request - request bad", "Content", WebIdData.Content)
+					backend.Logger.Debug("Batch request - WebID lookup failed", "RefID", RefID, "target", query.FullTargetPath,
+						"status", WebIdData.Status, "content", WebIdData.Content)
+					PIWebAPIQueries[RefID][i].Status = WebIdData.Status
 					jWebIdData, err := json.Marshal(WebIdData.Content)
 					if err != nil {
 						PIWebAPIQueries[RefID][i].Error = err
@@ -279,7 +291,8 @@ func (d *Datasource) sendBatch(ctx context.Context, PIWebAPIQueriesAll []PiProce
 					PIWebAPIQueries[RefID][i].Status = http.StatusOK
 					PIWebAPIQueries[RefID][i].Cached = true
 				} else {
-					backend.Logger.Error("Batch request - bad", "Content", ResponseData.Content)
+					backend.Logger.Debug("Batch request - data request failed", "RefID", RefID, "target", query.FullTargetPath,
+						"status", ResponseData.Status, "content", ResponseData.Content)
 					d.webCache.Remove(query.HashCode)
 					PIWebAPIQueries[RefID][i].Status = ResponseData.Status
 					jResponseData, err := json.Marshal(ResponseData.Content)
@@ -315,7 +328,21 @@ func (d *Datasource) sendBatch(ctx context.Context, PIWebAPIQueriesAll []PiProce
 	return PIWebAPIQueries
 }
 
-/// END NEW
+// logFields returns the fields logged when the target fails: enough to reproduce the failing requests.
+func (q *PiProcessedQuery) logFields() []any {
+	fields := []any{"RefID", q.RefID, "target", q.FullTargetPath, "status", q.Status, "error", q.Error, "hideError", q.HideError}
+	if q.WebID != "" {
+		fields = append(fields, "webId", q.WebID)
+	}
+	if q.Resource != "" {
+		fields = append(fields, "request", strings.ReplaceAll(q.Resource, "{0}", q.WebID))
+	}
+	lookupKey := fmt.Sprintf("%s_Req%d", q.RefID, q.Index)
+	if lookup, ok := q.BatchRequest[lookupKey]; ok {
+		fields = append(fields, "webIdRequest", lookup.Resource)
+	}
+	return fields
+}
 
 func (d *Datasource) processBatchtoFrames(processedQuery map[string][]PiProcessedQuery) *backend.QueryDataResponse {
 	response := backend.NewQueryDataResponse()
@@ -327,7 +354,7 @@ func (d *Datasource) processBatchtoFrames(processedQuery map[string][]PiProcesse
 			// A failing target (e.g. an element of a multi-value variable without the attribute) reports its
 			// error and the other targets of the query still return their data.
 			if q.Error != nil {
-				backend.Logger.Error("Process batch to frames - Error processing query", "RefID", RefID, "query", q, "hide", q.HideError)
+				backend.Logger.Error("Query target failed", q.logFields()...)
 				if !q.HideError && subResponse.Error == nil {
 					subResponse.Error = q.Error
 					errorStatus = backend.Status(q.Status)
@@ -337,15 +364,7 @@ func (d *Datasource) processBatchtoFrames(processedQuery map[string][]PiProcesse
 			subResponse.Status = backend.Status(q.Status)
 
 			for _, SummaryType := range *q.Response.getSummaryTypes() {
-				frame, err := convertItemsToDataFrame(&q, d, SummaryType)
-
-				// if there is an error on a single frame we set metadata and continue to the next frame
-				if err != nil {
-					backend.Logger.Error("Process batch to frames - convertItemsToDataFrame", "RefID", RefID, "query", q)
-					subResponse.Error = q.Error
-					continue
-				}
-
+				frame := convertItemsToDataFrame(&q, d, SummaryType)
 				frame.RefID = RefID
 				// meta data
 				frame.Meta.ExecutedQueryString = strings.ReplaceAll(q.Resource, "{0}", q.WebID)

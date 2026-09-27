@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -24,10 +25,11 @@ type fakeAttribute struct {
 }
 
 // fakePIWebAPI is a minimal PI Web API batch endpoint for backend tests. It resolves WebIDs by path,
-// returns 404 for unknown paths, runs dependent (ParentIds) requests and returns two values per stream.
+// returns 404 for unknown paths, runs dependent (ParentIds) requests and returns each attribute's values.
 type fakePIWebAPI struct {
 	attributes map[string]fakeAttribute // full path (\\server\...|attribute) -> attribute
 	status     int                      // when set, every request is answered with this HTTP status
+	requests   atomic.Int32             // number of HTTP requests received
 }
 
 func (f *fakePIWebAPI) start(t *testing.T) *httptest.Server {
@@ -38,6 +40,7 @@ func (f *fakePIWebAPI) start(t *testing.T) *httptest.Server {
 }
 
 func (f *fakePIWebAPI) serve(w http.ResponseWriter, r *http.Request) {
+	f.requests.Add(1)
 	if f.status != 0 {
 		w.WriteHeader(f.status)
 		_, _ = w.Write([]byte(`{"Errors":["Authorization has been denied for this request."]}`))

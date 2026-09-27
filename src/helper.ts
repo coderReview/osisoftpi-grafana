@@ -19,12 +19,7 @@ export function getSummaryTypes(summary: PiWebAPISummary | undefined) {
 }
 // END TODO
 
-/**
- * Builds a URL query string for the PI Web API. Every value is URL-encoded so AF paths and names containing
- * characters such as `#`, `&`, `+`, `%` or spaces reach the server intact. Empty values are left out.
- *
- * @returns The query string including the leading `?`, or an empty string when there are no parameters.
- */
+/** Builds a `?key=value&...` query string with every value URL-encoded; empty values are left out. */
 export function buildQueryString(params: Record<string, unknown>): string {
   const parts = Object.entries(params)
     .filter(([, value]) => value !== undefined && value !== null && value !== '')
@@ -33,12 +28,8 @@ export function buildQueryString(params: Record<string, unknown>): string {
 }
 
 /**
- * Formats template variable values for PI Web API paths.
- *
- * A multi-value variable (or "All") becomes a `{value1,value2}` group. The backend expands every group into
- * one target per value, so several variables in the element path and variables in attributes or PI points
- * produce all combinations. Commas, braces and `%` inside the values are percent-encoded so they cannot
- * break the group; the backend decodes them.
+ * Formats a multi-value variable as a `{value1,value2}` group, which the backend expands into one target per value.
+ * Commas, braces and `%` inside the values are percent-encoded so they cannot break the group.
  */
 export function formatVariableValue(value: unknown): string {
   if (!Array.isArray(value)) {

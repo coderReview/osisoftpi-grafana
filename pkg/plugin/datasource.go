@@ -357,14 +357,9 @@ var allowedResourcePaths = []string{
 	"annotations",
 }
 
-// allowedResourceURL checks a resource request URL (path and query, as received from Grafana) against
-// allowedResourcePaths and returns the URL to forward to the PI Web API.
-//
-// The first path segment must be one of the allowed collections (PI Web API paths are case-insensitive).
-// Grafana decodes the path before calling the plugin, so "." and ".." segments, backslashes and '%' are
-// rejected: the PI Web API server would resolve them to other endpoints (e.g. elements/../batch). Names
-// and AF paths are always sent in the query string, and WebIDs are URL-safe, so valid requests never
-// contain them in the path.
+// allowedResourceURL returns the resource URL to forward to PI Web API when its first path segment is one of
+// allowedResourcePaths. Dot segments, backslashes and '%' are rejected because PI Web API would resolve them to
+// other endpoints (e.g. elements/../batch); valid requests only have WebIDs in the path.
 func allowedResourceURL(resourceURL string) (string, bool) {
 	path, query, hasQuery := strings.Cut(resourceURL, "?")
 	path = strings.Trim(path, "/")

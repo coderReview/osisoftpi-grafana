@@ -438,16 +438,17 @@ func getDataLabels(useNewFormat bool, q *PiProcessedQuery, pointType string, des
 	return frameLabel
 }
 
-func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, SummaryType string) (*data.Frame, error) {
+func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, SummaryType string) *data.Frame {
 	items := *processedQuery.Response.getItems(SummaryType)
-	webID := processedQuery.WebID
+	// when the WebID is not cached, the type is taken from the values and the metadata is empty
+	metadata, _ := d.getWebIDEntry(processedQuery.WebID)
 	// Units are only added when enabled in both the datasource configuration and the query.
 	includeMetaData := processedQuery.UseUnit && d.isUsingUnits()
 	digitalStates := processedQuery.DigitalStates
 	noDataReplace := processedQuery.getNoDataReplace()
 
 	stateNames := map[int64]string{} // digital state code -> name, from the good values
-	sliceType := d.getTypeForWebID(webID)
+	sliceType := metadata.Type
 	if sliceType == nil {
 		sliceType = inferValueType(items)
 	}
@@ -460,14 +461,14 @@ func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, Su
 		timestamps: make([]time.Time, 0),
 	}
 
-	units := preferredUnits(processedQuery.Response.getUnits(SummaryType), d.getUnitsForWebID(webID))
+	units := preferredUnits(processedQuery.Response.getUnits(SummaryType), metadata.Units)
 
 	// get frame name
-	frameLabel := getDataLabels(d.isUsingNewFormat(), processedQuery, d.getPointTypeForWebID(webID),
-		d.getDescriptionForWebID(webID), units, SummaryType)
+	frameLabel := getDataLabels(d.isUsingNewFormat(), processedQuery, metadata.PointType,
+		metadata.Description, units, SummaryType)
 
 	var labels map[string]string
-	digitalState := d.getDigitalStateForWebID(webID)
+	digitalState := metadata.DigitalState
 
 	frame := data.NewFrame("")
 	if d.isUsingNewFormat() {
@@ -573,7 +574,7 @@ func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, Su
 	if includeMetaData {
 		fieldConfig = &data.FieldConfig{
 			Unit:        units,
-			Description: d.getDescriptionForWebID(webID),
+			Description: metadata.Description,
 		}
 	}
 	values := valuepointers
@@ -590,7 +591,7 @@ func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, Su
 			"Cached": processedQuery.Cached,
 		},
 	}
-	return frame, nil
+	return frame
 }
 
 // preferredUnits returns the units to show for a PI point or AF attribute: the abbreviation returned with the

@@ -208,13 +208,12 @@ type PiProcessedQuery struct {
 	Resource            string
 	TargetPath          string
 	Variable            string
-	// MultiVariable is true when the element path used more than one multi-value template variable
-	MultiVariable bool
-	RefID         string
-	Error         error
-	Status        int
-	Cached        bool
-	Index         int
+	MultiVariable       bool
+	RefID               string
+	Error               error
+	Status              int
+	Cached              bool
+	Index               int
 }
 
 type Links struct {

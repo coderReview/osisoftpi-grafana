@@ -67,10 +67,7 @@ func TestConvertItemsToDataFrameUnits(t *testing.T) {
 				response.UnitsAbbreviation = ""
 				q.Response = response
 			}
-			frame, err := convertItemsToDataFrame(q, d, "")
-			if err != nil {
-				t.Fatalf("convertItemsToDataFrame returned error: %v", err)
-			}
+			frame := convertItemsToDataFrame(q, d, "")
 			if len(frame.Fields) != 2 {
 				t.Fatalf("expected 2 fields, got %d", len(frame.Fields))
 			}

@@ -220,82 +220,19 @@ func cleanWebIDCache(cache WebIDCache) {
 	}
 }
 
-func (d *Datasource) getTypeForWebID(webID string) reflect.Type {
+// getWebIDEntry returns the cached metadata of a WebID and extends its expiration time.
+func (d *Datasource) getWebIDEntry(webID string) (WebIDCacheEntry, bool) {
 	d.datasourceMutex.Lock()
 	defer d.datasourceMutex.Unlock()
 	path, exists := d.webIDCache.webIDPaths[webID]
-	if exists {
-		entry, exists := d.webIDCache.webIDCache[path]
-		if exists {
-			entry.ExpTime = time.Now().Add(d.webIDCache.duration)
-			d.webIDCache.webIDCache[path] = entry
-			return entry.Type
-		}
+	if !exists {
+		return WebIDCacheEntry{}, false
 	}
-	// If the specified webID is not found in the webIDCache, the type is taken from the values.
-	return nil
-}
-
-func (d *Datasource) getDigitalStateForWebID(webID string) bool {
-	d.datasourceMutex.Lock()
-	defer d.datasourceMutex.Unlock()
-	path, exists := d.webIDCache.webIDPaths[webID]
-	if exists {
-		entry, exists := d.webIDCache.webIDCache[path]
-		if exists {
-			entry.ExpTime = time.Now().Add(d.webIDCache.duration)
-			d.webIDCache.webIDCache[path] = entry
-			return entry.DigitalState
-		}
+	entry, exists := d.webIDCache.webIDCache[path]
+	if !exists {
+		return WebIDCacheEntry{}, false
 	}
-	// If the specified webID is not found in the webIDCache, return false
-	return false
-}
-
-func (d *Datasource) getPointTypeForWebID(webID string) string {
-	d.datasourceMutex.Lock()
-	defer d.datasourceMutex.Unlock()
-	path, exists := d.webIDCache.webIDPaths[webID]
-	if exists {
-		entry, exists := d.webIDCache.webIDCache[path]
-		if exists {
-			entry.ExpTime = time.Now().Add(d.webIDCache.duration)
-			d.webIDCache.webIDCache[path] = entry
-			return entry.PointType
-		}
-	}
-	// If the specified webID is not found in the webIDCache, return empty string
-	return ""
-}
-
-func (d *Datasource) getUnitsForWebID(webID string) string {
-	d.datasourceMutex.Lock()
-	defer d.datasourceMutex.Unlock()
-	path, exists := d.webIDCache.webIDPaths[webID]
-	if exists {
-		entry, exists := d.webIDCache.webIDCache[path]
-		if exists {
-			entry.ExpTime = time.Now().Add(d.webIDCache.duration)
-			d.webIDCache.webIDCache[path] = entry
-			return entry.Units
-		}
-	}
-	// If the specified webID is not found in the webIDCache, return empty string
-	return ""
-}
-
-func (d *Datasource) getDescriptionForWebID(webID string) string {
-	d.datasourceMutex.Lock()
-	defer d.datasourceMutex.Unlock()
-	path, exists := d.webIDCache.webIDPaths[webID]
-	if exists {
-		entry, exists := d.webIDCache.webIDCache[path]
-		if exists {
-			entry.ExpTime = time.Now().Add(d.webIDCache.duration)
-			d.webIDCache.webIDCache[path] = entry
-			return entry.Description
-		}
-	}
-	// If the specified webID is not found in the webIDCache, return empty string
-	return ""
+	entry.ExpTime = time.Now().Add(d.webIDCache.duration)
+	d.webIDCache.webIDCache[path] = entry
+	return entry, true
 }
