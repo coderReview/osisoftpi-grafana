@@ -55,6 +55,8 @@ func (d *Datasource) processQuery(allQueries []backend.DataQuery, datasourceUID 
 			continue
 		}
 
+		PiQuery.Pi.migrateLegacySummary()
+
 		// Determine if we are using units in the response.
 		// The front end doesn't guarantee that the UseUnit field will be set, so we need to check for nils
 		var UseUnit = false

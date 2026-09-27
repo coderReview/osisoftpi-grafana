@@ -80,3 +80,28 @@ describe('applyTemplateVariables', () => {
     expect(query.target).toBe('AF\\DB\\T-101;Level');
   });
 });
+
+describe('legacy queries (issue #194)', () => {
+  it('sends the summary and bad data replacement of a 4.x query in the current format', () => {
+    const target = {
+      refId: 'A',
+      target: 'AF\\DB\\E;Level',
+      attributes: [{ label: 'Level', value: { value: 'Level' } }],
+      segments: [],
+      summary: {
+        types: [{ label: 'Average', value: { value: 'Average', expandable: true } }],
+        basis: 'TimeWeighted',
+        interval: '$interval',
+        nodata: 'Previous',
+      },
+    } as unknown as PIWebAPIQuery;
+    const saved = cloneDeep(target);
+
+    const query = buildQueryParameters(target);
+
+    expect(query.summary).toMatchObject({ enable: true, duration: '1h', basis: 'TimeWeighted' });
+    expect(query.summary).not.toHaveProperty('interval');
+    expect(query.nodata).toBe('Previous');
+    expect(target).toEqual(saved);
+  });
+});

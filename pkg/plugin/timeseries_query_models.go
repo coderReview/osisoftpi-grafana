@@ -3,6 +3,7 @@ package plugin
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -141,6 +142,27 @@ type PIWebAPIQuery struct {
 	HashCode string `json:"hashCode"`
 }
 
+// migrateLegacySummary converts the summary settings saved by versions 4.x and 5.0 (issue #194): the summary was
+// enabled by selecting summary types, its duration was "interval", and "nodata" (Replace Bad Data) was part of the
+// summary. Versions 5.1 and 5.2 kept these fields when re-saving the query, with the summary disabled.
+func (q *PIWebAPIQuery) migrateLegacySummary() {
+	s := q.Summary
+	if s == nil || (s.Interval == nil && s.Nodata == nil) {
+		return
+	}
+	// "Null" is the default the query editor writes when it opens a query, so it does not override the saved value
+	if s.Nodata != nil && *s.Nodata != "" && (q.Nodata == nil || *q.Nodata == "" || *q.Nodata == "Null") {
+		q.Nodata = s.Nodata
+	}
+	if s.Interval != nil && strings.TrimSpace(*s.Interval) != "" && (s.Duration == nil || *s.Duration == "") {
+		duration := strings.TrimSpace(*s.Interval)
+		s.Duration = &duration
+	}
+	enable := s.Types != nil && len(*s.Types) > 0
+	s.Enable = &enable
+	s.Interval, s.Nodata = nil, nil
+}
+
 type QuerySummary struct {
 	Enable             *bool          `json:"enable"`
 	Basis              *string        `json:"basis"`
@@ -148,6 +170,9 @@ type QuerySummary struct {
 	Types              *[]SummaryType `json:"types"`
 	SampleTypeInterval *bool          `json:"sampleTypeInterval"`
 	SampleInterval     *string        `json:"sampleInterval"`
+	// Interval and Nodata are only in queries saved by versions 4.x and 5.0 (see migrateLegacySummary)
+	Interval *string `json:"interval"`
+	Nodata   *string `json:"nodata"`
 }
 
 type QueryPropertiesValue struct {

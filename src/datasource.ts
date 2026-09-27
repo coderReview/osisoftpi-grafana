@@ -23,6 +23,7 @@ import {
   getSummaryTypes,
   hashCode,
   metricQueryTransform,
+  migrateLegacyQuery,
   removeServerPrefix,
   removeTime,
 } from 'helper';
@@ -240,7 +241,8 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
           }
         : segment;
 
-    options.targets = map(options.targets, (target) => {
+    options.targets = map(options.targets, (savedTarget) => {
+      const target = migrateLegacyQuery(savedTarget);
       const tar = {
         enableStreaming: target.enableStreaming,
         target: this.templateSrv.replace(target.target, options.scopedVars, formatVariableValue),

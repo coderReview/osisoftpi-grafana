@@ -19,6 +19,29 @@ export function getSummaryTypes(summary: PiWebAPISummary | undefined) {
 }
 // END TODO
 
+/**
+ * Converts the summary settings saved by versions 4.x and 5.0 (issue #194): the summary was enabled by selecting
+ * summary types, its duration was `interval`, and `nodata` (Replace Bad Data) was part of the summary. Versions 5.1
+ * and 5.2 kept these fields when re-saving the query, with the summary disabled. Returns the query unchanged when
+ * it has no legacy fields.
+ */
+export function migrateLegacyQuery(query: PIWebAPIQuery): PIWebAPIQuery {
+  const { interval, nodata, ...summary } = (query.summary ?? {}) as PiWebAPISummary & {
+    interval?: string;
+    nodata?: string;
+  };
+  if (interval === undefined && nodata === undefined) {
+    return query;
+  }
+  if (interval?.trim() && !summary.duration) {
+    summary.duration = interval.trim();
+  }
+  summary.enable = (summary.types?.length ?? 0) > 0;
+  // "Null" is the default the query editor writes when it opens a query, so it does not override the saved value
+  const keepNodata = !nodata || (!!query.nodata && query.nodata !== 'Null');
+  return { ...query, nodata: keepNodata ? query.nodata : nodata, summary };
+}
+
 /** Builds a `?key=value&...` query string with every value URL-encoded; empty values are left out. */
 export function buildQueryString(params: Record<string, unknown>): string {
   const parts = Object.entries(params)

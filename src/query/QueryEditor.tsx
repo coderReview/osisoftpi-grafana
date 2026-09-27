@@ -8,7 +8,7 @@ import { PiWebAPIDatasource } from '../datasource';
 import { QueryInlineField, QueryRawInlineField, QueryRowTerminator } from '../components/Forms';
 import { PIWebAPISelectableValue, PIWebAPIDataSourceJsonData, PIWebAPIQuery, defaultQuery } from '../types';
 import { QueryEditorModeSwitcher } from 'components/QueryEditorModeSwitcher';
-import { parseRawQuery, getSummaryTypes, removeServerPrefix } from 'helper';
+import { parseRawQuery, getSummaryTypes, migrateLegacyQuery, removeServerPrefix } from 'helper';
 
 const LABEL_WIDTH = 24;
 const LABEL_SWITCH_WIDTH = 49.067 / 8.0;
@@ -957,7 +957,10 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
   };
 
   initialLoad = (force: boolean) => {
-    const { query } = this.props;
+    const query = migrateLegacyQuery(this.props.query);
+    if (query !== this.props.query) {
+      this.props.onChange(query);
+    }
     const metricsQuery = defaults(query, defaultQuery) as PIWebAPIQuery;
     const { segments, attributes, summary, isPiPoint } = metricsQuery;
 
