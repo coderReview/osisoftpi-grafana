@@ -84,6 +84,7 @@
 - Fixed backend panics on queries without the optional `recordedValues` or `summary` settings, and on an invalid regex - issue #209
 - Attributes and PI points are read from the query target when the query has no attributes list (API calls, hand-written queries) - issue #209
 - Fixed AF elements, attributes and PI points with `#`, `&`, `+`, `%` or spaces in their names not returning data; calculation expressions and event frame filters are encoded too - issue #186
+  - calculation expressions are now sent URL-encoded: an expression that was hand-encoded to work around the old behaviour (e.g. `%2B` instead of `+`) must be changed back to the plain character
 - The backend resource proxy only forwards the PI Web API collections used by the query editor and configuration page (asset servers, databases, elements, attributes, data servers and points); other paths, including path traversal such as `elements/../batch`, return 403
 - Fixed one failing element or attribute in a query (e.g. an element of a multi-value variable without the attribute) dropping the data of the other targets of the query
 - Connection and authentication errors (e.g. a wrong password, 401) are shown on the panel instead of an empty "No data"
