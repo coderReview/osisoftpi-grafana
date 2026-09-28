@@ -35,7 +35,7 @@ type StreamChannelConstruct struct {
 	query         *PiProcessedQuery
 	frameCache    streamFrameCache // pre-computed static WebID metadata; see buildStreamFrameCache
 	// generationKey is the map key used to look up and increment channelGenerations.
-	// It is the same base string passed to channelKeyFor: "webID|summaryType".
+	// It is "webID|settings", with the settings passed to channelKeyFor (see streamSettings).
 	generationKey string
 }
 
