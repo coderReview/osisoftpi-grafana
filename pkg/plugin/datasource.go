@@ -81,6 +81,7 @@ func NewPIWebAPIDatasource(ctx context.Context, settings backend.DataSourceInsta
 		connectionKeyWebIDs:       make(map[string][]string),
 		dataSourceOptions:         &dataSourceOptions,
 		tlsInsecureSkipVerify:     opts.TLS != nil && opts.TLS.InsecureSkipVerify,
+		websocketHeader:           websocketHeader(opts),
 		initalTime:                time.Now(),
 		totalCalls:                0,
 		callRate:                  0.0,

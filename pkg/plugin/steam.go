@@ -14,6 +14,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
@@ -174,6 +175,20 @@ func (d *Datasource) getOrCreateWebsocketConnection(connectionKey string) error 
 	return nil
 }
 
+// websocketHeader returns the headers of the WebSocket requests to PI Web API: the same authentication and custom
+// headers as the datasource's HTTP requests.
+func websocketHeader(opts httpclient.Options) http.Header {
+	header := opts.Header.Clone()
+	if header == nil {
+		header = http.Header{}
+	}
+	if opts.BasicAuth != nil && header.Get("Authorization") == "" {
+		userpass := opts.BasicAuth.User + ":" + opts.BasicAuth.Password
+		header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(userpass)))
+	}
+	return header
+}
+
 // createWebsocketConnection opens a new authenticated streamsets/channel WebSocket connection
 // to PI Web API for the given set of WebIDs. All tags in a query batch share one connection.
 func (d *Datasource) createWebsocketConnection(webIDs []string) (*websocket.Conn, error) {
@@ -182,9 +197,7 @@ func (d *Datasource) createWebsocketConnection(webIDs []string) (*websocket.Conn
 		return nil, err
 	}
 
-	header := http.Header{}
-	userpass := d.settings.BasicAuthUser + ":" + d.settings.DecryptedSecureJSONData["basicAuthPassword"]
-	header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(userpass)))
+	header := d.websocketHeader.Clone()
 
 	// Honour the datasource-level tlsSkipVerify setting so that self-signed
 	// or internally-signed PI Web API certificates are accepted when configured.
@@ -197,8 +210,11 @@ func (d *Datasource) createWebsocketConnection(webIDs []string) (*websocket.Conn
 		TLSClientConfig: tlsCfg,
 	}
 
-	conn, _, err := dialer.Dial(uri, header)
+	conn, resp, err := dialer.Dial(uri, header)
 	if err != nil {
+		if resp != nil {
+			err = fmt.Errorf("%w: %s", err, resp.Status)
+		}
 		backend.Logger.Error("Streaming: WebSocket dial failed", "uri", uri, "error", err)
 		return nil, err
 	}
