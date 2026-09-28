@@ -42,9 +42,11 @@ type Datasource struct {
 	tlsInsecureSkipVerify bool
 	// websocketHeader holds the authentication and custom headers sent when opening a WebSocket connection.
 	websocketHeader http.Header
-	initalTime      time.Time
-	totalCalls      int
-	callRate        float64
+	// websocketTimeout is the timeout for opening a WebSocket connection (see websocketTimeout).
+	websocketTimeout time.Duration
+	initalTime       time.Time
+	totalCalls       int
+	callRate         float64
 }
 
 type PIWebAPIDataSourceJsonData struct {

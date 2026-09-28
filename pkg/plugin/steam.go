@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -118,7 +119,7 @@ func (d *Datasource) subscribeToWebsocketChannel(ctx context.Context, path strin
 	// to it as soon as the shared connection is established.
 	senderCh := d.addStreamSender(construct.WebID, sender)
 
-	if err := d.getOrCreateWebsocketConnection(construct.ConnectionKey); err != nil {
+	if err := d.getOrCreateWebsocketConnection(ctx, construct.ConnectionKey); err != nil {
 		d.removeStreamSender(construct.WebID, sender)
 		errchan <- fmt.Errorf("streaming: WebSocket connect failed for connection %q: %w", construct.ConnectionKey, err)
 		return
@@ -130,7 +131,7 @@ func (d *Datasource) subscribeToWebsocketChannel(ctx context.Context, path strin
 // getOrCreateWebsocketConnection ensures exactly one shared WebSocket connection exists for
 // the given connection key. The blocking network dial is performed outside any mutex so
 // that multiple panels can attempt connection setup concurrently.
-func (d *Datasource) getOrCreateWebsocketConnection(connectionKey string) error {
+func (d *Datasource) getOrCreateWebsocketConnection(ctx context.Context, connectionKey string) error {
 	// Fast path: connection already exists.
 	d.websocketConnectionsMutex.Lock()
 	if _, ok := d.websocketConnections[connectionKey]; ok {
@@ -146,7 +147,7 @@ func (d *Datasource) getOrCreateWebsocketConnection(connectionKey string) error 
 	d.websocketConnectionsMutex.Unlock()
 
 	// Dial outside any lock — this may block for hundreds of milliseconds.
-	conn, err := d.createWebsocketConnection(webIDs)
+	conn, err := d.createWebsocketConnection(ctx, webIDs)
 	if err != nil {
 		return err
 	}
@@ -184,9 +185,21 @@ func websocketHeader(opts httpclient.Options) http.Header {
 	return header
 }
 
+// defaultWebsocketTimeout is the WebSocket handshake timeout when the datasource has no HTTP timeout.
+const defaultWebsocketTimeout = 30 * time.Second
+
+// websocketTimeout returns the WebSocket handshake timeout: the datasource's HTTP timeout ("Timeout" in the
+// advanced HTTP settings), or defaultWebsocketTimeout.
+func websocketTimeout(opts httpclient.Options) time.Duration {
+	if opts.Timeouts != nil && opts.Timeouts.Timeout > 0 {
+		return opts.Timeouts.Timeout
+	}
+	return defaultWebsocketTimeout
+}
+
 // createWebsocketConnection opens a new authenticated streamsets/channel WebSocket connection
 // to PI Web API for the given set of WebIDs. All tags in a query batch share one connection.
-func (d *Datasource) createWebsocketConnection(webIDs []string) (*websocket.Conn, error) {
+func (d *Datasource) createWebsocketConnection(ctx context.Context, webIDs []string) (*websocket.Conn, error) {
 	uri, err := buildStreamSetsWebSocketURL(d.settings.URL, webIDs)
 	if err != nil {
 		return nil, err
@@ -201,11 +214,30 @@ func (d *Datasource) createWebsocketConnection(webIDs []string) (*websocket.Conn
 		tlsCfg.InsecureSkipVerify = true //nolint:gosec // user-configured opt-in
 	}
 
+	// the handshake times out like the datasource's HTTP requests, so an unresponsive server cannot block the stream
+	timeout := d.websocketTimeout
+	if timeout <= 0 {
+		timeout = defaultWebsocketTimeout
+	}
+	// the connection is shared by the subscribers of the channel: the subscriber's context only cancels the
+	// handshake (the WebSocket library does not stop the handshake when the context is cancelled)
+	var stopCancel func() bool
 	dialer := websocket.Dialer{
-		TLSClientConfig: tlsCfg,
+		TLSClientConfig:  tlsCfg,
+		HandshakeTimeout: timeout,
+		NetDialContext: func(dialCtx context.Context, network, addr string) (net.Conn, error) {
+			netConn, err := (&net.Dialer{}).DialContext(dialCtx, network, addr)
+			if err == nil {
+				stopCancel = context.AfterFunc(ctx, func() { netConn.Close() })
+			}
+			return netConn, err
+		},
 	}
 
-	conn, resp, err := dialer.Dial(uri, header)
+	conn, resp, err := dialer.DialContext(ctx, uri, header)
+	if stopCancel != nil {
+		stopCancel()
+	}
 	if err != nil {
 		if resp != nil {
 			err = fmt.Errorf("%w: %s", err, resp.Status)
@@ -364,7 +396,7 @@ func (d *Datasource) sendStreamData(
 					backend.Logger.Info("Streaming: connection lost, attempting reconnect",
 						"path", path, "webID", webID, "attempt", attempt)
 					newSenderCh = d.addStreamSender(webID, sender)
-					if err := d.getOrCreateWebsocketConnection(construct.ConnectionKey); err != nil {
+					if err := d.getOrCreateWebsocketConnection(ctx, construct.ConnectionKey); err != nil {
 						backend.Logger.Warn("Streaming: reconnect attempt failed",
 							"path", path, "webID", webID, "attempt", attempt, "error", err)
 						d.removeStreamSender(webID, sender)
