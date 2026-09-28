@@ -321,3 +321,27 @@ func TestSubscribeStream_StableKeyFound(t *testing.T) {
 		t.Errorf("expected OK, got %v", resp.Status)
 	}
 }
+
+// "Enable Streaming Support" is no longer an experimental feature: the configuration page shows it on its own.
+func TestIsUsingStreaming_WithoutExperimentalFeatures(t *testing.T) {
+	on, off := true, false
+	tests := []struct {
+		name         string
+		experimental *bool
+		streaming    *bool
+		want         bool
+	}{
+		{"streaming only", nil, &on, true},
+		{"streaming with experimental features off", &off, &on, true},
+		{"streaming and experimental features", &on, &on, true},
+		{"streaming off", &on, &off, false},
+		{"not configured", nil, nil, false},
+	}
+	for _, tt := range tests {
+		d := newTestDatasource()
+		d.dataSourceOptions = &PIWebAPIDataSourceJsonData{UseExperimental: tt.experimental, UseStreaming: tt.streaming}
+		if got := d.isUsingStreaming(); got != tt.want {
+			t.Errorf("%s: isUsingStreaming() = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}
