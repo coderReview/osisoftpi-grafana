@@ -439,11 +439,42 @@ func getDataLabels(useNewFormat bool, q *PiProcessedQuery, pointType string, des
 }
 
 func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, SummaryType string) *data.Frame {
-	items := *processedQuery.Response.getItems(SummaryType)
 	// when the WebID is not cached, the type is taken from the values and the metadata is empty
 	metadata, _ := d.getWebIDEntry(processedQuery.WebID)
+	return itemsToFrame(processedQuery, *processedQuery.Response.getItems(SummaryType), frameOptions{
+		metadata:      metadata,
+		responseUnits: processedQuery.Response.getUnits(SummaryType),
+		summaryType:   SummaryType,
+		newFormat:     d.isUsingNewFormat(),
+		units:         d.isUsingUnits(),
+	})
+}
+
+// convertStreamItemsToFrame converts the values of one stream of a PI Web API channel message, with the same
+// rules as the query responses.
+func convertStreamItemsToFrame(processedQuery *PiProcessedQuery, stream StreamData, cache streamFrameCache) *data.Frame {
+	return itemsToFrame(processedQuery, stream.Items, frameOptions{
+		metadata:      cache.metadata,
+		responseUnits: stream.UnitsAbbreviation,
+		newFormat:     cache.newFormat,
+		units:         cache.units,
+	})
+}
+
+// frameOptions are the WebID metadata and datasource options used by itemsToFrame.
+type frameOptions struct {
+	metadata      WebIDCacheEntry // empty when the WebID is not cached
+	responseUnits string          // units abbreviation returned with the values
+	summaryType   string
+	newFormat     bool // "Enable New Data Format"
+	units         bool // "Enable Unit From Data"
+}
+
+// itemsToFrame converts the values of a PI point or AF attribute to a data frame.
+func itemsToFrame(processedQuery *PiProcessedQuery, items []PiBatchContentItem, o frameOptions) *data.Frame {
+	metadata := o.metadata
 	// Units are only added when enabled in both the datasource configuration and the query.
-	includeMetaData := processedQuery.UseUnit && d.isUsingUnits()
+	includeMetaData := processedQuery.UseUnit && o.units
 	digitalStates := processedQuery.DigitalStates
 	noDataReplace := processedQuery.getNoDataReplace()
 
@@ -461,17 +492,17 @@ func convertItemsToDataFrame(processedQuery *PiProcessedQuery, d *Datasource, Su
 		timestamps: make([]time.Time, 0),
 	}
 
-	units := preferredUnits(processedQuery.Response.getUnits(SummaryType), metadata.Units)
+	units := preferredUnits(o.responseUnits, metadata.Units)
 
 	// get frame name
-	frameLabel := getDataLabels(d.isUsingNewFormat(), processedQuery, metadata.PointType,
-		metadata.Description, units, SummaryType)
+	frameLabel := getDataLabels(o.newFormat, processedQuery, metadata.PointType,
+		metadata.Description, units, o.summaryType)
 
 	var labels map[string]string
 	digitalState := metadata.DigitalState
 
 	frame := data.NewFrame("")
-	if d.isUsingNewFormat() {
+	if o.newFormat {
 		labels = frameLabel
 	}
 

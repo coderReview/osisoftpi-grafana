@@ -121,7 +121,7 @@ export const defaultQuery: Partial<PIWebAPIQuery> = {
   useLastValue: { enable: false },
   recordedValues: { enable: false, boundaryType: 'Inside' },
   digitalStates: { enable: false },
-  enableStreaming: { enable: false },
+  enableStreaming: { enable: false, variable: '' },
   useUnit: { enable: false },
   isPiPoint: false,
 };

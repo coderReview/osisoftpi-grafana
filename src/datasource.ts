@@ -244,7 +244,14 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
     options.targets = map(options.targets, (savedTarget) => {
       const target = migrateQuery(savedTarget);
       const tar = {
-        enableStreaming: target.enableStreaming,
+        enableStreaming: (() => {
+          const es = target.enableStreaming ?? { enable: false };
+          if (es.variable && es.variable.trim() !== '') {
+            const resolved = this.templateSrv.replace(es.variable.trim(), options.scopedVars).toLowerCase();
+            return { ...es, enable: resolved === 'true' || resolved === '1' || resolved === 'yes' };
+          }
+          return es;
+        })(),
         target: this.templateSrv.replace(target.target, options.scopedVars, formatVariableValue),
         elementPath: this.templateSrv.replace(target.elementPath, options.scopedVars, formatVariableValue),
         attributes: map(target.attributes, replaceSegment),

@@ -1353,6 +1353,23 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
               />
             </InlineField>
           )}
+          {this.props.datasource.useStreaming && (
+            <InlineField
+              label="Streaming variable"
+              labelWidth={LABEL_WIDTH}
+              tooltip={'Optional dashboard variable that overrides the streaming toggle. E.g. $streamingEnabled. The variable should resolve to true or false.'}
+            >
+              <Input
+                value={enableStreaming.variable ?? ''}
+                onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                  this.onChange({ ...metricsQuery, enableStreaming: { ...enableStreaming, variable: event.target.value } })
+                }
+                onBlur={onRunQuery}
+                placeholder="$variable"
+                width={16}
+              />
+            </InlineField>
+          )}
         </InlineFieldRow>
         
         {(interpolate.enable || (!useLastValue.enable && !recordedValues.enable && !summary.enable)) && (

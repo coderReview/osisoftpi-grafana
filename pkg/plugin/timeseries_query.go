@@ -2,15 +2,17 @@ package plugin
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 )
@@ -353,6 +355,35 @@ func (q *PiProcessedQuery) logFields() []any {
 func (d *Datasource) processBatchtoFrames(processedQuery map[string][]PiProcessedQuery) *backend.QueryDataResponse {
 	response := backend.NewQueryDataResponse()
 
+	// Pre-pass: collect all streamable WebIDs so every tag in this batch can share a
+	// single streamsets/channel WebSocket connection instead of one socket per tag.
+	var streamableWebIDs []string
+	for _, queries := range processedQuery {
+		for i := range queries {
+			if queries[i].Streamable && queries[i].WebID != "" {
+				streamableWebIDs = append(streamableWebIDs, queries[i].WebID)
+			}
+		}
+	}
+	var connectionKey string
+	if len(streamableWebIDs) > 0 {
+		sort.Strings(streamableWebIDs)
+		// Deduplicate (same tag may appear in multiple summary types)
+		uniq := streamableWebIDs[:0]
+		for i, id := range streamableWebIDs {
+			if i == 0 || id != streamableWebIDs[i-1] {
+				uniq = append(uniq, id)
+			}
+		}
+		connectionKey = strings.Join(uniq, "|")
+		// Copy to break the reference to the local slice's backing array before long-term storage.
+		webIDsCopy := make([]string, len(uniq))
+		copy(webIDsCopy, uniq)
+		d.datasourceMutex.Lock()
+		d.connectionKeyWebIDs[connectionKey] = webIDsCopy
+		d.datasourceMutex.Unlock()
+	}
+
 	for RefID, query := range processedQuery {
 		var subResponse backend.DataResponse
 		var errorStatus backend.Status
@@ -375,23 +406,50 @@ func (d *Datasource) processBatchtoFrames(processedQuery map[string][]PiProcesse
 				// meta data
 				frame.Meta.ExecutedQueryString = strings.ReplaceAll(q.Resource, "{0}", q.WebID)
 
-				// TODO: enable streaming
-				// If the query is streamable, then we need to set the channel URI
-				// and the executed query string.
+				// If the query is streamable, register a channel so Grafana subscribes to
+				// the live WebSocket stream for this tag. A generation counter is embedded in
+				// the key: while the subscription is alive the generation stays constant
+				// (repeated QueryData calls reuse the same centrifuge subscription, preventing
+				// accumulation past ClientChannelLimit=128). When a subscription ends the
+				// generation is incremented in sendStreamData, so the next QueryData call
+				// returns a new channel URI → Grafana creates a fresh LiveDataStream →
+				// panels recover from the "streaming channel error: expired" state.
 				if q.Streamable {
-					// Create a new channel for this frame request.
-					// Creating a new channel for each frame request is not ideal,
-					// but it is the only way to ensure that the frame data is refreshed
-					// on a time interval update.
-					channeluuid := uuid.New()
-					channelURI := "ds/" + q.UID + "/" + channeluuid.String()
-					channel := StreamChannelConstruct{
-						WebID:               q.WebID,
-						IntervalNanoSeconds: q.IntervalNanoSeconds,
-						tagLabel:            q.Label,
-						query:               &q,
+					genKey := q.WebID + "|" + SummaryType
+					d.datasourceMutex.Lock()
+					gen := d.channelGenerations[genKey]
+					channelKey := channelKeyFor(q.WebID, SummaryType, gen)
+					_, exists := d.channelConstruct[channelKey]
+					d.datasourceMutex.Unlock()
+					channelURI := "ds/" + q.UID + "/" + channelKey
+					if !exists {
+						// buildStreamFrameCache acquires datasourceMutex internally
+						// (via WebID cache lookups), so it must be called outside the lock.
+						// the stream converts only the new values: without the query response, which is not kept
+						streamQuery := q
+						streamQuery.Response = nil
+						streamQuery.Cached = false
+						channel := StreamChannelConstruct{
+							WebID:         q.WebID,
+							ConnectionKey: connectionKey,
+							tagLabel:      q.Label,
+							query:         &streamQuery,
+							frameCache:    buildStreamFrameCache(d, &q),
+							generationKey: genKey,
+						}
+						d.datasourceMutex.Lock()
+						// Re-check after building: a concurrent goroutine may have registered
+						// first, or sendStreamData may have incremented the generation.
+						// Read the latest gen and recompute key to avoid registering stale entries.
+						gen = d.channelGenerations[genKey]
+						channelKey = channelKeyFor(q.WebID, SummaryType, gen)
+						channelURI = "ds/" + q.UID + "/" + channelKey
+						if _, exists = d.channelConstruct[channelKey]; !exists {
+							channel.generationKey = genKey
+							d.channelConstruct[channelKey] = channel
+						}
+						d.datasourceMutex.Unlock()
 					}
-					d.channelConstruct[channeluuid.String()] = channel
 					frame.Meta.Channel = channelURI
 				}
 
@@ -404,6 +462,17 @@ func (d *Datasource) processBatchtoFrames(processedQuery map[string][]PiProcesse
 		response.Responses[RefID] = subResponse
 	}
 	return response
+}
+
+// channelKeyFor returns a stable, deterministic 16-char hex key for a streaming channel.
+// The generation parameter is incremented each time a subscription ends (see sendStreamData),
+// so a recovered or expired subscription gets a new key → new Grafana LiveDataStream →
+// panel recovers. While a subscription is alive the generation stays constant, so repeated
+// QueryData calls (e.g. on time-range changes) reuse the same centrifuge subscription and
+// never accumulate past ClientChannelLimit (128).
+func channelKeyFor(webID, summaryType string, gen uint32) string {
+	h := sha256.Sum256([]byte(fmt.Sprintf("%s|%s|%d", webID, summaryType, gen)))
+	return hex.EncodeToString(h[:8])
 }
 
 func (q *PIWebAPIQuery) isSummary() bool {

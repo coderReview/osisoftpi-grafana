@@ -4,7 +4,6 @@ go 1.26.5
 
 require (
 	github.com/go-co-op/gocron v1.37.0
-	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.2
 	github.com/grafana/grafana-plugin-sdk-go v0.296.5
 	go.opentelemetry.io/otel v1.46.0
@@ -30,6 +29,7 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/flatbuffers v25.12.19+incompatible // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/grafana/otel-profiling-go v0.6.0 // indirect
 	github.com/grafana/pyroscope-go/godeltaprof v0.1.12 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.1.0 // indirect

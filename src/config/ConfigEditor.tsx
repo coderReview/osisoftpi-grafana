@@ -95,7 +95,6 @@ export class PIWebAPIConfigEditor extends PureComponent<Props, State> {
     const jsonData = {
       ...options.jsonData,
       useExperimental : event.target.checked,
-      useStreaming : event.target.checked ? options.jsonData.useStreaming : false,
     };
     onOptionsChange({ ...options, jsonData });
   };
@@ -169,13 +168,11 @@ export class PIWebAPIConfigEditor extends PureComponent<Props, State> {
               <InlineSwitch value={options.jsonData.useUnit} onChange={this.onUseUnitChange} />
             </InlineField>
           </div>
-          {/* {options.jsonData.useExperimental && (
-            <div className="gf-form-inline">
-              <InlineField label="Enable Steaming Support" labelWidth={26}>
-                <InlineSwitch value={options.jsonData.useStreaming} onChange={this.onUseStreamingChange} />
-              </InlineField>
-            </div>
-          )} */}
+          <div className="gf-form-inline">
+            <InlineField label="Enable Streaming Support" labelWidth={26} tooltip={'Stream live PI tag values via WebSocket'}>
+              <InlineSwitch value={options.jsonData.useStreaming} onChange={this.onUseStreamingChange} />
+            </InlineField>
+          </div>
         </div>
 
         <h3 className="page-heading">PI/AF Connection Details</h3>

@@ -75,10 +75,13 @@ func NewPIWebAPIDatasource(ctx context.Context, settings backend.DataSourceInsta
 		websocketConnectionsMutex: &sync.Mutex{},
 		datasourceMutex:           &sync.Mutex{},
 		channelConstruct:          make(map[string]StreamChannelConstruct),
+		channelGenerations:        make(map[string]uint32),
 		websocketConnections:      make(map[string]*websocket.Conn),
-		sendersByWebID:            make(map[string]map[*backend.StreamSender]bool),
-		streamChannels:            make(map[string]chan []byte),
+		senderChannels:            make(map[string]map[*backend.StreamSender]chan StreamData),
+		connectionKeyWebIDs:       make(map[string][]string),
 		dataSourceOptions:         &dataSourceOptions,
+		tlsInsecureSkipVerify:     opts.TLS != nil && opts.TLS.InsecureSkipVerify,
+		websocketHeader:           websocketHeader(opts),
 		initalTime:                time.Now(),
 		totalCalls:                0,
 		callRate:                  0.0,
@@ -329,12 +332,9 @@ func (d *Datasource) isUsingUnits() bool {
 	return d.dataSourceOptions.UseUnit != nil && *d.dataSourceOptions.UseUnit
 }
 
-// isUsingStreaming checks whether the datasource has streaming enabled in experimental mode.
-// This requires both the UseExperimental and UseStreaming options to be set and enabled.
-// Returns true if both options are enabled; otherwise, false.
+// isUsingStreaming checks whether "Enable Streaming Support" is enabled in the datasource configuration.
 func (d *Datasource) isUsingStreaming() bool {
-	return d.dataSourceOptions.UseExperimental != nil && *d.dataSourceOptions.UseExperimental &&
-		d.dataSourceOptions.UseStreaming != nil && *d.dataSourceOptions.UseStreaming
+	return d.dataSourceOptions.UseStreaming != nil && *d.dataSourceOptions.UseStreaming
 }
 
 // isUsingResponseCache checks if response caching is enabled in experimental mode for the datasource.
