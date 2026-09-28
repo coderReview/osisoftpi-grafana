@@ -345,3 +345,27 @@ func TestIsUsingStreaming_WithoutExperimentalFeatures(t *testing.T) {
 		}
 	}
 }
+
+// A summary series (e.g. 1 min averages) must not stream: PI Web API channels send the raw values, which would be
+// appended to the averages.
+func TestIsStreamable_NotForSummaries(t *testing.T) {
+	on, off := true, false
+	basis := "TimeWeighted"
+	types := []SummaryType{{Label: "Average", Value: SummaryTypeValue{Value: "Average"}}}
+	streaming := &struct {
+		Enable *bool `json:"enable"`
+	}{Enable: &on}
+
+	plain := Query{Pi: PIWebAPIQuery{EnableStreaming: streaming}}
+	if !plain.isStreamable() {
+		t.Error("a query with streaming enabled must be streamable")
+	}
+	summary := Query{Pi: PIWebAPIQuery{EnableStreaming: streaming, Summary: &QuerySummary{Enable: &on, Basis: &basis, Types: &types}}}
+	if summary.isStreamable() {
+		t.Error("a summary query must not be streamable")
+	}
+	disabled := Query{Pi: PIWebAPIQuery{EnableStreaming: streaming, Summary: &QuerySummary{Enable: &off, Basis: &basis, Types: &types}}}
+	if !disabled.isStreamable() {
+		t.Error("a query with the summary disabled must be streamable")
+	}
+}
