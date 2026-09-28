@@ -278,6 +278,13 @@ func (d *Datasource) teardownStream(webID, path string, construct StreamChannelC
 	d.datasourceMutex.Unlock()
 }
 
+// streamReconnectAttempts and streamReconnectBaseDelay control how sendStreamData reconnects a lost connection:
+// the first attempt is immediate, then the delay doubles (1 s, 2 s, 4 s, 8 s).
+var (
+	streamReconnectAttempts  = 5
+	streamReconnectBaseDelay = time.Second
+)
+
 // sendStreamData is the per-subscriber send loop. It reads pre-parsed StreamData items
 // from the subscriber's private channel, converts them into a data.Frame, and pushes it
 // to Grafana. On context cancellation or send failure it deregisters the sender and
@@ -293,8 +300,6 @@ func (d *Datasource) sendStreamData(
 	construct StreamChannelConstruct,
 ) {
 	webID := construct.WebID
-	const maxReconnectAttempts = 5
-	const baseReconnectDelay = time.Second
 
 	// Keepalive: if no data arrives within this interval, re-send the last known
 	// frame to prevent Grafana's centrifuge from expiring the idle channel.
@@ -331,9 +336,9 @@ func (d *Datasource) sendStreamData(
 				// Channel closed — WebSocket connection lost (auth expiry / Forbidden).
 				// Try to reconnect with exponential backoff; first attempt is immediate.
 				var newSenderCh chan StreamData
-				for attempt := 1; attempt <= maxReconnectAttempts; attempt++ {
+				for attempt := 1; attempt <= streamReconnectAttempts; attempt++ {
 					if attempt > 1 {
-						delay := baseReconnectDelay * time.Duration(1<<uint(attempt-2))
+						delay := streamReconnectBaseDelay * time.Duration(1<<uint(attempt-2))
 						t := time.NewTimer(delay)
 						select {
 						case <-ctx.Done():
@@ -360,8 +365,9 @@ func (d *Datasource) sendStreamData(
 				}
 
 				if newSenderCh == nil {
+					// Grafana runs the stream again every 5 s while the panel is subscribed, so the channel stays
+					// registered (same key) and one of those runs reconnects once PI Web API is back.
 					backend.Logger.Error("Streaming: all reconnect attempts exhausted", "path", path, "webID", webID)
-					d.teardownStream(webID, path, construct, sender)
 					errchan <- errors.New("streaming: connection lost and reconnect failed")
 					return
 				}
