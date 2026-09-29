@@ -110,8 +110,8 @@ func apiBatchRequest(ctx context.Context, d *Datasource, BatchSubRequests interf
 }
 
 // convertSliceToPointers converts a slice of values to a slice of
-// pointers to those values. This is used to create point values that are nullable.
-// TODO: handle bad value processing here
+// pointers to those values. This is used to create point values that are nullable: the values at the positions in
+// badValues are nil.
 func convertSliceToPointers(slice interface{}, badValues []int) interface{} {
 	s := reflect.ValueOf(slice)
 	t := reflect.TypeOf(slice).Elem()

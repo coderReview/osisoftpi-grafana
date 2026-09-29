@@ -1010,8 +1010,7 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
         );
     }
 
-    // recover summary due to format change
-    // TODO: remove in 6.0.0
+    // the summary is saved with every setting (defaults for the ones not set) and the summary types of the editor
     const summary = {
       ...defaultQuery.summary,
       ...query.summary,
@@ -1019,7 +1018,6 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
     if (summary) {
       summary.types = this.state.summaries;
     }
-    // END TODO
 
     onChange(versioned ? this.withVersion({ ...query, summary }) : { ...query, summary });
 
