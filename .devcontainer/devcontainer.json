@@ -7,6 +7,7 @@
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
   "hostRequirements": { "cpus": 4 },
+  "containerEnv": { "COREPACK_ENABLE_DOWNLOAD_PROMPT": "0" },
   "postCreateCommand": ".devcontainer/setup.sh",
   "postStartCommand": ".devcontainer/start.sh",
   "forwardPorts": [3000, 8080],
