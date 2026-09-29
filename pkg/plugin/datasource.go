@@ -63,8 +63,6 @@ func NewPIWebAPIDatasource(ctx context.Context, settings backend.DataSourceInsta
 
 	// Create a new scheduler that will be used to clean the webIDCache every MaxCacheTime hours.
 	scheduler := gocron.NewScheduler(time.UTC)
-	scheduler.Every(maxDuration).Hour().Do(cleanWebIDCache, webIDCache)
-	scheduler.StartAsync()
 
 	ds := &Datasource{
 		settings:                  settings,
@@ -90,6 +88,8 @@ func NewPIWebAPIDatasource(ctx context.Context, settings backend.DataSourceInsta
 
 	// Create a new query mux and assign it to the datasource.
 	ds.queryMux = ds.newQueryMux()
+	_, _ = scheduler.Every(maxDuration).Hour().Do(ds.cleanWebIDCache)
+	scheduler.StartAsync()
 
 	log.DefaultLogger.Info("PIWebAPI Datasource Created", "UID", settings.UID, "Name", settings.Name)
 
