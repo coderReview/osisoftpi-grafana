@@ -319,6 +319,7 @@ func (d *Datasource) teardownStream(webID, path string, construct StreamChannelC
 	d.channelGenerations[construct.generationKey]++
 	delete(d.channelConstruct, path)
 	delete(d.streamLastTimes, path)
+	delete(d.streamFilledUntil, path)
 	d.datasourceMutex.Unlock()
 }
 
@@ -342,18 +343,34 @@ func (d *Datasource) lastStreamTime(path string) (time.Time, bool) {
 	return t, ok
 }
 
-// newStreamItems returns the items after the last value sent on the channel: after filling a gap, the first
-// messages of the new connection can repeat values that were already sent.
+// recordFill records the time of the last value sent by fillStreamGap.
+func (d *Datasource) recordFill(path string, t time.Time) {
+	d.datasourceMutex.Lock()
+	defer d.datasourceMutex.Unlock()
+	if d.streamFilledUntil == nil {
+		d.streamFilledUntil = make(map[string]time.Time)
+	}
+	d.streamFilledUntil[path] = t
+}
+
+// newStreamItems leaves out the live values already sent by fillStreamGap: the first messages of the new connection
+// can repeat them. Once a later value arrives, all values are sent again, including values with an earlier or the
+// same time (corrected past values, attributes without data reference).
 func (d *Datasource) newStreamItems(path string, items []PiBatchContentItem) []PiBatchContentItem {
-	last, ok := d.lastStreamTime(path)
+	d.datasourceMutex.Lock()
+	defer d.datasourceMutex.Unlock()
+	filled, ok := d.streamFilledUntil[path]
 	if !ok {
 		return items
 	}
 	newItems := make([]PiBatchContentItem, 0, len(items))
 	for _, item := range items {
-		if item.Timestamp.After(last) {
+		if item.Timestamp.After(filled) {
 			newItems = append(newItems, item)
 		}
+	}
+	if len(newItems) > 0 {
+		delete(d.streamFilledUntil, path)
 	}
 	return newItems
 }
@@ -386,8 +403,13 @@ func (d *Datasource) fillStreamGap(ctx context.Context, path string, construct S
 		backend.Logger.Warn("Streaming: could not read the values to fill the gap", "path", path, "webID", construct.WebID, "error", err)
 		return
 	}
-	recorded.Items = d.newStreamItems(path, recorded.Items)
-	if len(recorded.Items) == 0 {
+	newItems := recorded.Items[:0]
+	for _, item := range recorded.Items {
+		if item.Timestamp.After(last) { // the recorded values start with the last value sent
+			newItems = append(newItems, item)
+		}
+	}
+	if recorded.Items = newItems; len(recorded.Items) == 0 {
 		return
 	}
 	frame := convertStreamItemsToFrame(construct.query, recorded, construct.frameCache)
@@ -395,7 +417,9 @@ func (d *Datasource) fillStreamGap(ctx context.Context, path string, construct S
 		backend.Logger.Warn("Streaming: could not send the values filling the gap", "path", path, "webID", construct.WebID, "error", err)
 		return
 	}
-	d.recordStreamTime(path, recorded.Items[len(recorded.Items)-1].Timestamp)
+	filledUntil := recorded.Items[len(recorded.Items)-1].Timestamp
+	d.recordStreamTime(path, filledUntil)
+	d.recordFill(path, filledUntil)
 	backend.Logger.Info("Streaming: filled the gap after reconnect", "path", path, "webID", construct.WebID, "values", len(recorded.Items))
 }
 

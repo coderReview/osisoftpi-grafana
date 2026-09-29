@@ -114,3 +114,24 @@ func TestStreamFillGapsDefault(t *testing.T) {
 		}
 	}
 }
+
+// Without a filled gap, live values are never dropped, even when their time is not newer: a static attribute always
+// has the same timestamp, and PI Web API sends corrected past values with their original time.
+func TestNewStreamItemsOnlyAfterFill(t *testing.T) {
+	d := newTestDatasource()
+	static := time.Unix(0, 0).UTC()
+	d.recordStreamTime("path", static)
+	if items := d.newStreamItems("path", []PiBatchContentItem{{Timestamp: static, Value: 3.0}}); len(items) != 1 {
+		t.Errorf("a new value of a static attribute was dropped")
+	}
+
+	// after a fill, the values it sent are not repeated, then filtering stops
+	filled := time.Date(2026, 9, 29, 10, 1, 20, 0, time.UTC)
+	d.recordFill("path", filled)
+	if items := d.newStreamItems("path", []PiBatchContentItem{{Timestamp: filled}, {Timestamp: filled.Add(10 * time.Second)}}); len(items) != 1 {
+		t.Errorf("expected only the value after the filled ones, got %v", items)
+	}
+	if items := d.newStreamItems("path", []PiBatchContentItem{{Timestamp: filled.Add(-time.Hour)}}); len(items) != 1 {
+		t.Errorf("filtering must stop once the stream is past the filled values, got %v", items)
+	}
+}

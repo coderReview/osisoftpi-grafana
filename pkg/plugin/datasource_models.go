@@ -45,6 +45,9 @@ type Datasource struct {
 	// streamLastTimes holds the time of the last value sent on each streaming channel (by channel path), to fill the
 	// gap after a reconnect. It survives the stream being run again by Grafana; guarded by datasourceMutex.
 	streamLastTimes map[string]time.Time
+	// streamFilledUntil holds, by channel path, the time of the last value sent by fillStreamGap until the live values
+	// are past it (see newStreamItems); guarded by datasourceMutex.
+	streamFilledUntil map[string]time.Time
 	// websocketTimeout is the timeout for opening a WebSocket connection (see websocketTimeout).
 	websocketTimeout time.Duration
 	initalTime       time.Time
