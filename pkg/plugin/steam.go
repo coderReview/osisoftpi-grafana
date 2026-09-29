@@ -399,6 +399,9 @@ func (d *Datasource) fillStreamGap(ctx context.Context, path string, construct S
 	backend.Logger.Info("Streaming: filled the gap after reconnect", "path", path, "webID", construct.WebID, "values", len(recorded.Items))
 }
 
+// streamKeepaliveInterval is how long a stream waits for a new value before sending a keepalive to the panel.
+var streamKeepaliveInterval = 30 * time.Second
+
 // streamReconnectAttempts and streamReconnectBaseDelay control how sendStreamData reconnects a lost connection:
 // the first attempt is immediate, then the delay doubles (1 s, 2 s, 4 s, 8 s).
 var (
@@ -424,7 +427,7 @@ func (d *Datasource) sendStreamData(
 
 	// Keepalive: if no data arrives within this interval, re-send the last known
 	// frame to prevent Grafana's centrifuge from expiring the idle channel.
-	const keepaliveInterval = 30 * time.Second
+	keepaliveInterval := streamKeepaliveInterval
 	keepalive := time.NewTimer(keepaliveInterval)
 	defer keepalive.Stop()
 	var lastFrame *data.Frame
@@ -441,10 +444,10 @@ func (d *Datasource) sendStreamData(
 			return
 
 		case <-keepalive.C:
-			// No data received within the keepalive window — re-send the last frame
-			// to keep the Grafana streaming channel alive.
+			// No data received within the keepalive window: send the last frame without its values, to keep the
+			// Grafana streaming channel alive without adding the last values to the panel again.
 			if lastFrame != nil {
-				if err := sender.SendFrame(lastFrame, data.IncludeDataOnly); err != nil {
+				if err := sender.SendFrame(lastFrame.EmptyCopy(), data.IncludeDataOnly); err != nil {
 					backend.Logger.Error("Streaming: keepalive send failed",
 						"webID", webID, "error", err)
 					d.teardownStream(webID, path, construct, sender)
