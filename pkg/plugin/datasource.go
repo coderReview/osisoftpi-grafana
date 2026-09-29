@@ -100,6 +100,7 @@ func NewPIWebAPIDatasource(ctx context.Context, settings backend.DataSourceInsta
 // created. As soon as datasource settings change detected by SDK old datasource instance will
 // be disposed and a new one will be created using NewSampleDatasource factory function.
 func (d *Datasource) Dispose() {
+	d.scheduler.Stop()
 	d.httpClient.CloseIdleConnections()
 }
 
