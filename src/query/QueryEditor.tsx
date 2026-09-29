@@ -243,13 +243,6 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
     return segments;
   }
 
-  // remove a summary from the user interface and the query
-  removeSummary(part: SelectableValue<PIWebAPISelectableValue>) {
-    const summaries = filter(this.state.summaries, (item: SelectableValue<PIWebAPISelectableValue>) => {
-      return item !== part;
-    });
-    this.setState({ summaries });
-  }
   // add a new summary to the query
   onSummaryAction(item: SelectableValue<PIWebAPISelectableValue>) {
     const summaries = this.state.summaries.slice(0) as Array<SelectableValue<PIWebAPISelectableValue>>;
@@ -267,13 +260,6 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
     this.setState({ summarySegment: {}, summaries }, this.stateCallback);
   }
 
-  // remove an attribute from the query
-  removeAttribute(part: SelectableValue<PIWebAPISelectableValue>) {
-    const attributes = filter(this.state.attributes, (item: SelectableValue<PIWebAPISelectableValue>) => {
-      return item !== part;
-    });
-    this.attributeChangeValue(attributes);
-  }
   // add an attribute to the query
   onAttributeAction(item: SelectableValue<PIWebAPISelectableValue>) {
     const { query } = this.props;

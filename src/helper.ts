@@ -2,7 +2,7 @@ import { each, filter, map } from 'lodash';
 
 import { MetricFindValue } from '@grafana/data';
 
-import { PiwebapiElementPath, PiwebapiRsp, PiWebAPISummary } from 'types';
+import { PiwebapiRsp, PiWebAPISummary } from 'types';
 
 // TODO: remove in 6.0.0
 export function getSummaryTypes(summary: PiWebAPISummary | undefined) {
@@ -110,10 +110,6 @@ export function parseRawQuery(tr: string): any {
   return { attributes, elementPath: null };
 }
 
-export function lowerCaseFirstLetter(string: string): string {
-  return string.charAt(0).toLocaleLowerCase() + string.slice(1);
-}
-
 /**
  * Builds the Grafana metric segment for use on the query user interface.
  *
@@ -136,111 +132,3 @@ export function metricQueryTransform(response: PiwebapiRsp[]): MetricFindValue[]
   });
 }
 
-/**
- * Check if all items are selected.
- *
- * @param {any} current the current variable selection
- * @return {boolean} true if all value is selected, false otherwise
- */
-export function isAllSelected(current: any): boolean {
-  if (!current) {
-    return false;
-  }
-  if (Array.isArray(current.text)) {
-    return current.text.indexOf('All') >= 0;
-  }
-  return current.text === 'All';
-}
-
-/**
- * Resolve PIWebAPI response 'value' data to value - timestamp pairs.
- *
- * @param {any} item - 'Item' object from PIWebAPI
- * @param {any} noDataReplacementMode - String state of how to replace 'No Data'
- * @param {any} grafanaDataPoint - Single Grafana value pair (value, timestamp).
- * @returns grafanaDataPoint - Single Grafana value pair (value, timestamp).
- * @returns perviousValue - {any} Grafana value (value only).
- *
- */
-export function noDataReplace(
-  item: any,
-  noDataReplacementMode: any,
-  grafanaDataPoint: any[]
-): {
-  grafanaDataPoint: any[];
-  previousValue: any;
-  drop: boolean;
-} {
-  let previousValue = null;
-  let drop = false;
-  if (!item.Good || item.Value === 'No Data' || (item.Value?.Name && item.Value?.Name === 'No Data')) {
-    if (noDataReplacementMode === 'Drop') {
-      drop = true;
-    } else if (noDataReplacementMode === '0') {
-      grafanaDataPoint[0] = 0;
-    } else if (noDataReplacementMode === 'Keep') {
-      // Do nothing keep
-    } else if (noDataReplacementMode === 'Null') {
-      grafanaDataPoint[0] = null;
-    } else if (noDataReplacementMode === 'Previous' && previousValue !== null) {
-      grafanaDataPoint[0] = previousValue;
-    }
-  } else {
-    previousValue = item.Value;
-  }
-  return { grafanaDataPoint, previousValue, drop };
-}
-
-/**
- * Check if the value is a number.
- *
- * @param {any} number the value to check
- * @returns {boolean} true if the value is a number, false otherwise
- */
-export function checkNumber(number: any): boolean {
-  return typeof number === 'number' && !Number.isNaN(number) && Number.isFinite(number);
-}
-
-/**
- * Returns the last item of the element path.
- *
- * @param {string} path element path
- * @returns {string} last item of the element path
- */
-export function getLastPath(path: string): string {
-  let splitPath = path.split('|');
-  if (splitPath.length === 0) {
-    return '';
-  }
-  splitPath = splitPath[0].split('\\');
-  return splitPath.length === 0 ? '' : splitPath.pop() ?? '';
-}
-
-/**
- * Returns the last item of the element path plus variable.
- *
- * @param {PiwebapiElementPath[]} elementPathArray array of element paths
- * @param {string} path element path
- * @returns {string} last item of the element path
- */
-export function getPath(elementPathArray: PiwebapiElementPath[], path: string): string {
-  if (!path || elementPathArray.length === 0) {
-    return '';
-  }
-  const splitStr = getLastPath(path);
-  const foundElement = elementPathArray.find((e) => path.indexOf(e.path) >= 0)?.variable;
-  return foundElement ? foundElement + '|' + splitStr : splitStr;
-}
-
-/**
- * Replace calculation dot in expression with PI point name.
- *
- * @param {boolean} replace - is pi point and calculation.
- * @param {PiwebapiRsp} webid - Pi web api response object.
- * @param {string} url - original url.
- * @returns Modified url
- */
-export function getFinalUrl(replace: boolean, webid: PiwebapiRsp, url: string) {
-  const newUrl = replace ? url.replace(/'\.'/g, `'${webid.Name}'`) : url;
-  return newUrl;
-}

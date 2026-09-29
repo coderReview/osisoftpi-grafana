@@ -445,19 +445,6 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
       return filter(response.Items ?? [], (item) => item.InstanceType === 'EventFrame');
     });
   }
-  getElementTemplates(databaseId: string): Promise<PiwebapiRsp[]> {
-    if (!databaseId) {
-      return Promise.resolve([]);
-    }
-    return this.restGet(
-      '/assetdatabases/' +
-        databaseId +
-        '/elementtemplates' +
-        buildQueryString({ selectedFields: 'Items.InstanceType;Items.Name;Items.WebId' })
-    ).then((response) => {
-      return filter(response.Items ?? [], (item) => item.InstanceType === 'Element');
-    });
-  }
 
   /**
    * @description
