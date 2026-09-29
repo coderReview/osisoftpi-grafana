@@ -220,7 +220,7 @@ func (d *Datasource) cleanWebIDCache() {
 		if now.After(entry.ExpTime) {
 			log.DefaultLogger.Debug("WebID cache - removing aged WebID", "path", entry.Path)
 			delete(cache.webIDCache, key)
-			delete(cache.webIDPaths, entry.Path)
+			delete(cache.webIDPaths, entry.WebID)
 		}
 	}
 }
