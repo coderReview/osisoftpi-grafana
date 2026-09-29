@@ -1,0 +1,204 @@
+{
+  "uid": "sim-legacy-queries",
+  "title": "Queries saved by plugin 4.x and 5.0",
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "AF query saved by 4.1 (summary)",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "targets": [
+        {
+          "interpolate": {
+            "enable": false
+          },
+          "recordedValues": {
+            "enable": false
+          },
+          "useLastValue": {
+            "enable": false
+          },
+          "digitalStates": {
+            "enable": false
+          },
+          "useUnit": {
+            "enable": false
+          },
+          "regex": {
+            "enable": false
+          },
+          "expression": "",
+          "display": "",
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "isPiPoint": false,
+          "target": "AFSIM\\TankControlSim\\SimPlant\\U-100\\T-101;Level",
+          "elementPath": "AFSIM\\TankControlSim\\SimPlant\\U-100\\T-101",
+          "segments": [
+            {
+              "label": "AFSIM",
+              "value": {
+                "value": "AFSIM",
+                "expandable": true
+              }
+            },
+            {
+              "label": "TankControlSim",
+              "value": {
+                "value": "TankControlSim",
+                "expandable": true
+              }
+            },
+            {
+              "label": "SimPlant",
+              "value": {
+                "value": "SimPlant",
+                "expandable": true
+              }
+            },
+            {
+              "label": "U-100",
+              "value": {
+                "value": "U-100",
+                "expandable": true
+              }
+            },
+            {
+              "label": "T-101",
+              "value": {
+                "value": "T-101",
+                "expandable": true
+              }
+            }
+          ],
+          "attributes": [
+            {
+              "label": "Level",
+              "value": {
+                "value": "Level",
+                "expandable": false
+              }
+            }
+          ],
+          "summary": {
+            "types": [
+              {
+                "label": "Average",
+                "value": {
+                  "value": "Average",
+                  "expandable": true
+                }
+              }
+            ],
+            "basis": "TimeWeighted",
+            "interval": "10m",
+            "nodata": "Previous"
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "PI point query saved by 5.0 (summary)",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "targets": [
+        {
+          "interpolate": {
+            "enable": false
+          },
+          "recordedValues": {
+            "enable": false
+          },
+          "useLastValue": {
+            "enable": false
+          },
+          "digitalStates": {
+            "enable": false
+          },
+          "useUnit": {
+            "enable": false
+          },
+          "regex": {
+            "enable": false
+          },
+          "expression": "",
+          "display": "",
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "isPiPoint": true,
+          "enableStreaming": {
+            "enable": false
+          },
+          "target": "PISIM;T-101.Level",
+          "elementPath": "PISIM",
+          "segments": [
+            {
+              "label": "PISIM",
+              "value": {
+                "value": "PISIM",
+                "expandable": false
+              }
+            }
+          ],
+          "attributes": [
+            {
+              "label": "T-101.Level",
+              "value": {
+                "value": "T-101.Level",
+                "expandable": false
+              }
+            }
+          ],
+          "summary": {
+            "types": [
+              {
+                "label": "Maximum",
+                "value": {
+                  "value": "Maximum",
+                  "expandable": true
+                }
+              }
+            ],
+            "basis": "EventWeighted",
+            "interval": "15m",
+            "nodata": "Null"
+          }
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "simulator"
+  ],
+  "refresh": ""
+}

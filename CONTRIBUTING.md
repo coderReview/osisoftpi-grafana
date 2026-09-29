@@ -6,6 +6,16 @@
 - Backend: `mage -v build:linux` (or `mage -v` for every platform); checks: `golangci-lint run ./pkg/...`, `go test ./pkg/...`
 - End-to-end tests: `yarn server` starts Grafana with the plugin, then `yarn e2e`
 
+## Trying it in GitHub Codespaces
+
+Open a codespace on this repository (Code → Codespaces, or https://codespaces.new/GridProtectionAlliance/osisoftpi-grafana).
+It builds the plugin and starts Grafana with the PI Web API simulator (`.devcontainer`); Grafana opens in the browser
+with example dashboards in the "PI Web API simulator" folder.
+
+- `.devcontainer/build.sh` rebuilds the plugin after a change and restarts Grafana.
+- `GRAFANA_VERSION=11.6.0 .devcontainer/start.sh` switches the Grafana version.
+- `docker stop pisim`, then `docker start pisim`, simulates a PI Web API outage for the streaming panels.
+
 ## Releasing
 
 Pushing a `v*` tag (e.g. `v6.0.0`, matching the version in `package.json`) runs `.github/workflows/release.yml`: it

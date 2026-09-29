@@ -1,0 +1,147 @@
+{
+  "uid": "sim-variables",
+  "title": "Multi-value variables",
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "equip",
+        "type": "query",
+        "datasource": {
+          "type": "gridprotectionalliance-osisoftpi-datasource",
+          "uid": "pisim"
+        },
+        "refresh": 1,
+        "multi": true,
+        "includeAll": true,
+        "query": "{\"path\": \"AFSIM\\\\TankControlSim\\\\SimPlant\\\\U-100\"}",
+        "definition": "{\"path\": \"AFSIM\\\\TankControlSim\\\\SimPlant\\\\U-100\"}",
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        }
+      },
+      {
+        "name": "signal",
+        "type": "custom",
+        "multi": true,
+        "includeAll": true,
+        "query": "Flow,Discharge Pressure",
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Every equipment x signal combination",
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "AFSIM\\TankControlSim\\SimPlant\\U-100\\${equip};${signal}",
+          "elementPath": "AFSIM\\TankControlSim\\SimPlant\\U-100\\${equip}",
+          "attributes": [
+            {
+              "label": "${signal}",
+              "value": {
+                "value": "${signal}",
+                "type": "template"
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "AFSIM",
+              "value": {
+                "value": "AFSIM",
+                "type": null,
+                "expandable": true
+              }
+            },
+            {
+              "label": "TankControlSim",
+              "value": {
+                "value": "TankControlSim",
+                "type": null,
+                "expandable": true
+              }
+            },
+            {
+              "label": "SimPlant",
+              "value": {
+                "value": "SimPlant",
+                "type": null,
+                "expandable": true
+              }
+            },
+            {
+              "label": "U-100",
+              "value": {
+                "value": "U-100",
+                "type": null,
+                "expandable": true
+              }
+            },
+            {
+              "label": "${equip}",
+              "value": {
+                "value": "${equip}",
+                "type": "template",
+                "expandable": true
+              }
+            }
+          ],
+          "isPiPoint": false,
+          "summary": {
+            "enable": false,
+            "types": []
+          },
+          "recordedValues": {
+            "enable": false
+          },
+          "interpolate": {
+            "enable": false
+          },
+          "useUnit": {
+            "enable": true
+          },
+          "hideError": true
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "simulator"
+  ],
+  "refresh": ""
+}

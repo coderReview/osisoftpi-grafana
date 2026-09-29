@@ -1,0 +1,110 @@
+{
+  "uid": "sim-gap-fill",
+  "title": "Live streaming: gap filling after a reconnect",
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-5m",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Fill gaps after reconnect: on",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "PISIM;T-101.Level",
+          "isPiPoint": true,
+          "attributes": [
+            {
+              "label": "T-101.Level",
+              "value": {
+                "value": "T-101.Level",
+                "expandable": false
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "PISIM",
+              "value": {
+                "value": "PISIM",
+                "expandable": false
+              }
+            }
+          ],
+          "enableStreaming": {
+            "enable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Fill gaps after reconnect: off",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "PISIM;T-101.Level",
+          "isPiPoint": true,
+          "attributes": [
+            {
+              "label": "T-101.Level",
+              "value": {
+                "value": "T-101.Level",
+                "expandable": false
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "PISIM",
+              "value": {
+                "value": "PISIM",
+                "expandable": false
+              }
+            }
+          ],
+          "enableStreaming": {
+            "enable": true,
+            "fillGaps": false
+          }
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "simulator"
+  ],
+  "refresh": ""
+}

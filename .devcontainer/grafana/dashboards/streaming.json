@@ -1,0 +1,178 @@
+{
+  "uid": "sim-streaming",
+  "title": "Live streaming",
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-5m",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "AF attributes (streaming)",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "AFSIM\\TankControlSim\\SimPlant\\U-100\\T-101;Level;Volume",
+          "attributes": [
+            {
+              "label": "Level",
+              "value": {
+                "value": "Level",
+                "expandable": false
+              }
+            },
+            {
+              "label": "Volume",
+              "value": {
+                "value": "Volume",
+                "expandable": false
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "AFSIM",
+              "value": {
+                "value": "AFSIM",
+                "expandable": true
+              }
+            },
+            {
+              "label": "TankControlSim",
+              "value": {
+                "value": "TankControlSim",
+                "expandable": true
+              }
+            },
+            {
+              "label": "SimPlant",
+              "value": {
+                "value": "SimPlant",
+                "expandable": true
+              }
+            },
+            {
+              "label": "U-100",
+              "value": {
+                "value": "U-100",
+                "expandable": true
+              }
+            },
+            {
+              "label": "T-101",
+              "value": {
+                "value": "T-101",
+                "expandable": true
+              }
+            }
+          ],
+          "isPiPoint": false,
+          "enableStreaming": {
+            "enable": true
+          },
+          "summary": {
+            "enable": false,
+            "types": [],
+            "basis": "EventWeighted"
+          },
+          "interpolate": {
+            "enable": false
+          },
+          "recordedValues": {
+            "enable": false
+          },
+          "useLastValue": {
+            "enable": false
+          },
+          "digitalStates": {
+            "enable": false
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "PI point (streaming)",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "PISIM;T-101.Level",
+          "attributes": [
+            {
+              "label": "T-101.Level",
+              "value": {
+                "value": "T-101.Level",
+                "expandable": false
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "PISIM",
+              "value": {
+                "value": "PISIM",
+                "expandable": true
+              }
+            }
+          ],
+          "isPiPoint": true,
+          "enableStreaming": {
+            "enable": true
+          },
+          "summary": {
+            "enable": false,
+            "types": [],
+            "basis": "EventWeighted"
+          },
+          "interpolate": {
+            "enable": false
+          },
+          "recordedValues": {
+            "enable": false
+          },
+          "useLastValue": {
+            "enable": false
+          },
+          "digitalStates": {
+            "enable": false
+          }
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "simulator"
+  ],
+  "refresh": ""
+}

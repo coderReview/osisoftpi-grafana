@@ -1,0 +1,38 @@
+apiVersion: 1
+
+datasources:
+  - name: PI Web API simulator
+    uid: pisim
+    type: gridprotectionalliance-osisoftpi-datasource
+    access: proxy
+    isDefault: true
+    url: http://pisim:8080/piwebapi
+    basicAuth: true
+    basicAuthUser: piuser
+    jsonData:
+      afserver: AFSIM
+      afdatabase: TankControlSim
+      pipoint: true
+      piserver: PISIM
+      useUnit: true
+      useStreaming: true
+    secureJsonData:
+      basicAuthPassword: pipass
+
+  - name: PI Web API simulator (new data format)
+    uid: pisim-nf
+    type: gridprotectionalliance-osisoftpi-datasource
+    access: proxy
+    url: http://pisim:8080/piwebapi
+    basicAuth: true
+    basicAuthUser: piuser
+    jsonData:
+      afserver: AFSIM
+      afdatabase: TankControlSim
+      pipoint: true
+      piserver: PISIM
+      useUnit: true
+      newFormat: true
+      useStreaming: true
+    secureJsonData:
+      basicAuthPassword: pipass
