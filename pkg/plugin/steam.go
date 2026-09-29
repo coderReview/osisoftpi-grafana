@@ -318,7 +318,85 @@ func (d *Datasource) teardownStream(webID, path string, construct StreamChannelC
 	d.datasourceMutex.Lock()
 	d.channelGenerations[construct.generationKey]++
 	delete(d.channelConstruct, path)
+	delete(d.streamLastTimes, path)
 	d.datasourceMutex.Unlock()
+}
+
+// recordStreamTime records the time of the last value sent on the channel.
+func (d *Datasource) recordStreamTime(path string, t time.Time) {
+	d.datasourceMutex.Lock()
+	defer d.datasourceMutex.Unlock()
+	if d.streamLastTimes == nil {
+		d.streamLastTimes = make(map[string]time.Time)
+	}
+	if t.After(d.streamLastTimes[path]) {
+		d.streamLastTimes[path] = t
+	}
+}
+
+// lastStreamTime returns the time of the last value sent on the channel, if any.
+func (d *Datasource) lastStreamTime(path string) (time.Time, bool) {
+	d.datasourceMutex.Lock()
+	defer d.datasourceMutex.Unlock()
+	t, ok := d.streamLastTimes[path]
+	return t, ok
+}
+
+// newStreamItems returns the items after the last value sent on the channel: after filling a gap, the first
+// messages of the new connection can repeat values that were already sent.
+func (d *Datasource) newStreamItems(path string, items []PiBatchContentItem) []PiBatchContentItem {
+	last, ok := d.lastStreamTime(path)
+	if !ok {
+		return items
+	}
+	newItems := make([]PiBatchContentItem, 0, len(items))
+	for _, item := range items {
+		if item.Timestamp.After(last) {
+			newItems = append(newItems, item)
+		}
+	}
+	return newItems
+}
+
+// fillStreamGap sends the values recorded since the last value sent on the channel ("Fill gaps after reconnect"):
+// PI Web API channels only send the values that change after the connection is opened, so the values recorded
+// while the stream was disconnected would otherwise only appear at the next refresh of the panel. At most the
+// query's maximum data points are sent; a failure is logged and leaves the gap until the next refresh.
+func (d *Datasource) fillStreamGap(ctx context.Context, path string, construct StreamChannelConstruct, sender *backend.StreamSender) {
+	if construct.query == nil || !construct.query.StreamFillGaps {
+		return
+	}
+	last, ok := d.lastStreamTime(path)
+	if !ok {
+		return // nothing sent yet: the query returned the values up to now
+	}
+	maxCount := construct.query.MaxDataPoints
+	if maxCount <= 0 {
+		maxCount = 1000
+	}
+	uri := fmt.Sprintf("streams/%s/recorded?startTime=%s&endTime=*&maxCount=%d",
+		construct.WebID, queryEscape(last.UTC().Format(time.RFC3339Nano)), maxCount)
+	body, err := apiGet(ctx, d, uri)
+	if err != nil {
+		backend.Logger.Warn("Streaming: could not fill the gap after reconnect", "path", path, "webID", construct.WebID, "error", err)
+		return
+	}
+	var recorded StreamData
+	if err := json.Unmarshal(body, &recorded); err != nil {
+		backend.Logger.Warn("Streaming: could not read the values to fill the gap", "path", path, "webID", construct.WebID, "error", err)
+		return
+	}
+	recorded.Items = d.newStreamItems(path, recorded.Items)
+	if len(recorded.Items) == 0 {
+		return
+	}
+	frame := convertStreamItemsToFrame(construct.query, recorded, construct.frameCache)
+	if err := sender.SendFrame(frame, data.IncludeDataOnly); err != nil {
+		backend.Logger.Warn("Streaming: could not send the values filling the gap", "path", path, "webID", construct.WebID, "error", err)
+		return
+	}
+	d.recordStreamTime(path, recorded.Items[len(recorded.Items)-1].Timestamp)
+	backend.Logger.Info("Streaming: filled the gap after reconnect", "path", path, "webID", construct.WebID, "values", len(recorded.Items))
 }
 
 // streamReconnectAttempts and streamReconnectBaseDelay control how sendStreamData reconnects a lost connection:
@@ -350,6 +428,9 @@ func (d *Datasource) sendStreamData(
 	keepalive := time.NewTimer(keepaliveInterval)
 	defer keepalive.Stop()
 	var lastFrame *data.Frame
+
+	// when Grafana runs the stream again after it failed, fill the gap before the new values
+	d.fillStreamGap(ctx, path, construct, sender)
 
 	for {
 		select {
@@ -415,9 +496,15 @@ func (d *Datasource) sendStreamData(
 					return
 				}
 				senderCh = newSenderCh
+				d.fillStreamGap(ctx, path, construct, sender)
 				continue
 			}
 
+			if construct.query != nil && construct.query.StreamFillGaps {
+				if item.Items = d.newStreamItems(path, item.Items); len(item.Items) == 0 {
+					continue
+				}
+			}
 			frame := convertStreamItemsToFrame(construct.query, item, construct.frameCache)
 
 			if err := sender.SendFrame(frame, data.IncludeDataOnly); err != nil {
@@ -429,6 +516,9 @@ func (d *Datasource) sendStreamData(
 			}
 			lastFrame = frame
 			keepalive.Reset(keepaliveInterval)
+			for _, sent := range item.Items {
+				d.recordStreamTime(path, sent.Timestamp)
+			}
 
 			backend.Logger.Debug("Streaming: frame sent to subscriber",
 				"webID", webID, "items", len(item.Items))

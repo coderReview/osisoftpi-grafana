@@ -131,6 +131,8 @@ func (d *Datasource) processQuery(allQueries []backend.DataQuery, datasourceUID 
 				MultiVariable:       target.MultiVariable,
 				Index:               index,
 				PluginVersion:       PiQuery.Pi.PluginVersion,
+				StreamFillGaps:      PiQuery.isStreamFillGaps(),
+				MaxDataPoints:       PiQuery.getMaxDataPoints(),
 			}
 
 			WebID := d.getCachedWebID(fullTargetPath)
@@ -465,11 +467,11 @@ func (d *Datasource) processBatchtoFrames(processedQuery map[string][]PiProcesse
 	return response
 }
 
-// streamSettings returns the query settings that change how streamed values are converted. Panels showing the same
+// streamSettings returns the query settings that change the streamed values. Panels showing the same
 // PI point with different settings get their own channel; the stream sends values only, so settings such as the
 // display name do not matter.
 func streamSettings(q *PiProcessedQuery) string {
-	return fmt.Sprintf("digitalStates=%t|nodata=%s", q.DigitalStates, q.getNoDataReplace())
+	return fmt.Sprintf("digitalStates=%t|nodata=%s|fillGaps=%t", q.DigitalStates, q.getNoDataReplace(), q.StreamFillGaps)
 }
 
 // channelKeyFor returns a stable, deterministic 16-char hex key for a streaming channel.

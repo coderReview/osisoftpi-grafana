@@ -352,9 +352,7 @@ func TestIsStreamable_NotForSummaries(t *testing.T) {
 	on, off := true, false
 	basis := "TimeWeighted"
 	types := []SummaryType{{Label: "Average", Value: SummaryTypeValue{Value: "Average"}}}
-	streaming := &struct {
-		Enable *bool `json:"enable"`
-	}{Enable: &on}
+	streaming := &QueryStreaming{Enable: &on}
 
 	plain := Query{Pi: PIWebAPIQuery{EnableStreaming: streaming}}
 	if !plain.isStreamable() {

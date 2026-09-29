@@ -88,8 +88,9 @@ The query returns the values of the time range, and new values are then added to
 - Calculations and summaries are not streamed, as PI Web API channels send raw values.
 - The WebSocket connection uses the datasource's basic authentication and custom HTTP headers, and its "Timeout"
   (30 seconds when not set). Other authentication methods (e.g. Kerberos) are not supported for streaming.
-- When PI Web API is unavailable, streaming resumes by itself once it is back. Values produced in the meantime are
-  shown at the next refresh of the panel.
+- When PI Web API is unavailable, streaming resumes by itself once it is back. With "Fill gaps after reconnect" (on by
+  default), the values recorded in the meantime are then added to the panel, up to the query's maximum data points;
+  when it is off, or for attributes without recorded values, they are shown at the next refresh of the panel.
 
 
 # Event Frames and Annotations
