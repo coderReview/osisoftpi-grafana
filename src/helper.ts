@@ -1,23 +1,8 @@
-import { each, filter, map } from 'lodash';
+import { each, map } from 'lodash';
 
 import { MetricFindValue } from '@grafana/data';
 
-import { PiwebapiRsp, PiWebAPISummary } from 'types';
-
-// TODO: remove in 6.0.0
-export function getSummaryTypes(summary: PiWebAPISummary | undefined) {
-  let types = filter(summary?.types ?? [], (item) => {
-    return item !== undefined && item !== null && String(item) !== '';
-  });
-  return types.map((t) => {
-    if (typeof t === 'string' || t instanceof String) {
-      const new_type = String(t);
-      return { label: new_type, value: { value: new_type, expandable: true } };
-    }
-    return t;
-  });
-}
-// END TODO
+import { PiwebapiRsp } from 'types';
 
 /** Builds a `?key=value&...` query string with every value URL-encoded; empty values are left out. */
 export function buildQueryString(params: Record<string, unknown>): string {

@@ -21,7 +21,6 @@ import {
   buildQueryString,
   firstVariableValue,
   formatVariableValue,
-  getSummaryTypes,
   hashCode,
   metricQueryTransform,
   removeServerPrefix,
@@ -298,11 +297,6 @@ export class PiWebAPIDatasource extends DataSourceWithBackend<PIWebAPIQuery, PIW
           ? this.templateSrv.replace(tar.summary.sampleInterval, options.scopedVars)
           : tar.summary.sampleInterval;
       }
-
-      // recover summary due to format change
-      // TODO: remove in 6.0.0
-      tar.summary.types = getSummaryTypes(tar.summary);
-      // END TODO
 
       tar.hashCode = hashCode(removeTime(tar));
 
