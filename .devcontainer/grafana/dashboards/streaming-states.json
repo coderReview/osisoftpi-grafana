@@ -1,0 +1,143 @@
+{
+  "uid": "sim-streaming-states",
+  "title": "Live streaming: digital states",
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-10m",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Digital states as text (streaming)",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "PISIM;P-101.Fault",
+          "attributes": [
+            {
+              "label": "P-101.Fault",
+              "value": {
+                "value": "P-101.Fault",
+                "expandable": false
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "PISIM",
+              "value": {
+                "value": "PISIM",
+                "expandable": true
+              }
+            }
+          ],
+          "isPiPoint": true,
+          "enableStreaming": {
+            "enable": true
+          },
+          "summary": {
+            "enable": false,
+            "types": [],
+            "basis": "EventWeighted"
+          },
+          "interpolate": {
+            "enable": false
+          },
+          "recordedValues": {
+            "enable": false
+          },
+          "useLastValue": {
+            "enable": false
+          },
+          "digitalStates": {
+            "enable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Digital state codes (streaming)",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "PISIM;P-101.Fault",
+          "attributes": [
+            {
+              "label": "P-101.Fault",
+              "value": {
+                "value": "P-101.Fault",
+                "expandable": false
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "PISIM",
+              "value": {
+                "value": "PISIM",
+                "expandable": true
+              }
+            }
+          ],
+          "isPiPoint": true,
+          "enableStreaming": {
+            "enable": true
+          },
+          "summary": {
+            "enable": false,
+            "types": [],
+            "basis": "EventWeighted"
+          },
+          "interpolate": {
+            "enable": false
+          },
+          "recordedValues": {
+            "enable": false
+          },
+          "useLastValue": {
+            "enable": false
+          },
+          "digitalStates": {
+            "enable": false
+          }
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "simulator"
+  ],
+  "refresh": ""
+}

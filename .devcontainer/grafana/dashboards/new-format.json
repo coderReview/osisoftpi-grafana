@@ -1,0 +1,71 @@
+{
+  "uid": "sim-new-format",
+  "title": "New data format (labels)",
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "AF attribute (target with a leading \\\\)",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim-nf"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim-nf"
+          },
+          "rawQuery": true,
+          "query": "\\\\AFSIM\\TankControlSim\\SimPlant\\U-100\\T-101;Level",
+          "target": "\\\\AFSIM\\TankControlSim\\SimPlant\\U-100\\T-101;Level",
+          "isPiPoint": false
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "PI point (target with a leading \\\\)",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim-nf"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim-nf"
+          },
+          "rawQuery": true,
+          "query": "\\\\PISIM;T-101.Level",
+          "target": "\\\\PISIM;T-101.Level",
+          "isPiPoint": true
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "simulator"
+  ],
+  "refresh": ""
+}

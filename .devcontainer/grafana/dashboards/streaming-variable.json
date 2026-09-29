@@ -1,0 +1,105 @@
+{
+  "uid": "sim-streaming-variable",
+  "title": "Live streaming: on/off variable",
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-5m",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "PI point, streaming set by the $live variable",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "PISIM;T-101.Level",
+          "attributes": [
+            {
+              "label": "T-101.Level",
+              "value": {
+                "value": "T-101.Level",
+                "expandable": false
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "PISIM",
+              "value": {
+                "value": "PISIM",
+                "expandable": true
+              }
+            }
+          ],
+          "isPiPoint": true,
+          "enableStreaming": {
+            "enable": false,
+            "variable": "$live"
+          },
+          "summary": {
+            "enable": false,
+            "types": [],
+            "basis": "EventWeighted"
+          },
+          "interpolate": {
+            "enable": false
+          },
+          "recordedValues": {
+            "enable": false
+          },
+          "useLastValue": {
+            "enable": false
+          },
+          "digitalStates": {
+            "enable": false
+          }
+        }
+      ]
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "live",
+        "type": "custom",
+        "query": "true,false",
+        "current": {
+          "text": "true",
+          "value": "true"
+        },
+        "options": [
+          {
+            "text": "true",
+            "value": "true",
+            "selected": true
+          },
+          {
+            "text": "false",
+            "value": "false",
+            "selected": false
+          }
+        ]
+      }
+    ]
+  },
+  "tags": [
+    "simulator"
+  ],
+  "refresh": ""
+}

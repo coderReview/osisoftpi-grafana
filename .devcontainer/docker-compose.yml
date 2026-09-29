@@ -1,0 +1,32 @@
+# Grafana with the plugin built in ../dist and the PI Web API simulator.
+# Started by start.sh; GRAFANA_VERSION selects the Grafana version.
+services:
+  grafana:
+    image: grafana/grafana-enterprise:${GRAFANA_VERSION:-13.2.2}
+    container_name: grafana
+    ports:
+      - 3000:3000
+    environment:
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: gridprotectionalliance-osisoftpi-datasource
+      GF_AUTH_ANONYMOUS_ENABLED: 'true'
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_LOG_FILTERS: plugin.gridprotectionalliance-osisoftpi-datasource:debug
+      # The Codespaces URL of Grafana, so that requests and Grafana Live pass the origin checks.
+      GF_SERVER_ROOT_URL: ${GRAFANA_URL:-http://localhost:3000/}
+      GF_SECURITY_CSRF_TRUSTED_ORIGINS: ${GRAFANA_HOST:-localhost:3000}
+      GF_LIVE_ALLOWED_ORIGINS: ${GRAFANA_ORIGIN:-http://localhost:3000}
+    volumes:
+      - ../dist:/var/lib/grafana/plugins/gridprotectionalliance-osisoftpi-datasource
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - pisim
+
+  pisim:
+    image: hshpvms/pi-webapi-simulator:1.4.1
+    container_name: pisim
+    ports:
+      - 8080:8080
+    environment:
+      PISIM_USERNAME: piuser
+      PISIM_PASSWORD: pipass

@@ -1,0 +1,174 @@
+{
+  "uid": "sim-annotations",
+  "title": "Annotations (event frames)",
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-12h",
+    "to": "now"
+  },
+  "annotations": {
+    "list": [
+      {
+        "name": "Pump trips",
+        "enable": true,
+        "iconColor": "red",
+        "datasource": {
+          "type": "gridprotectionalliance-osisoftpi-datasource",
+          "uid": "pisim"
+        },
+        "target": {
+          "refId": "Anno",
+          "isAnnotation": true,
+          "database": {
+            "WebId": "F1RDcFv8ZENEXFaCjlPNxA3QtwlBMTvVlbLVKUvgCTQM3jTgQUZTSU1cVEFOS0NPTlRST0xTSU0",
+            "Id": "bd131394-5b59-522d-94be-009340cde34e",
+            "Name": "TankControlSim",
+            "Description": "Tank level control simulation",
+            "Path": "\\\\AFSIM\\TankControlSim",
+            "ExtendedProperties": {
+              "DefaultPIServer": {
+                "Value": "PISIM"
+              },
+              "DefaultPIServerID": {
+                "Value": "831654f8-2bae-54ab-b640-da51158bec78"
+              }
+            },
+            "Links": {
+              "Self": "http://localhost:8080/piwebapi/assetdatabases/F1RDcFv8ZENEXFaCjlPNxA3QtwlBMTvVlbLVKUvgCTQM3jTgQUZTSU1cVEFOS0NPTlRST0xTSU0",
+              "Elements": "http://localhost:8080/piwebapi/assetdatabases/F1RDcFv8ZENEXFaCjlPNxA3QtwlBMTvVlbLVKUvgCTQM3jTgQUZTSU1cVEFOS0NPTlRST0xTSU0/elements",
+              "ElementTemplates": "http://localhost:8080/piwebapi/assetdatabases/F1RDcFv8ZENEXFaCjlPNxA3QtwlBMTvVlbLVKUvgCTQM3jTgQUZTSU1cVEFOS0NPTlRST0xTSU0/elementtemplates",
+              "ElementCategories": "http://localhost:8080/piwebapi/assetdatabases/F1RDcFv8ZENEXFaCjlPNxA3QtwlBMTvVlbLVKUvgCTQM3jTgQUZTSU1cVEFOS0NPTlRST0xTSU0/elementcategories",
+              "EventFrames": "http://localhost:8080/piwebapi/assetdatabases/F1RDcFv8ZENEXFaCjlPNxA3QtwlBMTvVlbLVKUvgCTQM3jTgQUZTSU1cVEFOS0NPTlRST0xTSU0/eventframes",
+              "AssetServer": "http://localhost:8080/piwebapi/assetservers/F1RScFv8ZENEXFaCjlPNxA3QtwQUZTSU0"
+            }
+          },
+          "template": {
+            "WebId": "F1ETHcyQgDhE11ixo_vJL9XDTgQUZTSU1cVEFOS0NPTlRST0xTSU1cRUxFTUVOVFRFTVBMQVRFU1tQVU1QIFRSSVBd",
+            "Id": "8090cc1d-4438-58d7-b1a3-fbc92fd5c34e",
+            "Name": "Pump Trip",
+            "Description": "P-101 tripped (pump off)",
+            "Path": "\\\\AFSIM\\TankControlSim\\ElementTemplates[Pump Trip]",
+            "AllowElementToExtend": true,
+            "BaseTemplate": "Process Event",
+            "InstanceType": "EventFrame",
+            "NamingPattern": "",
+            "CategoryNames": [
+              "Disturbance"
+            ],
+            "ExtendedProperties": {},
+            "Severity": "Minor",
+            "CanBeAcknowledged": false,
+            "Links": {
+              "Self": "http://localhost:8080/piwebapi/elementtemplates/F1ETHcyQgDhE11ixo_vJL9XDTgQUZTSU1cVEFOS0NPTlRST0xTSU1cRUxFTUVOVFRFTVBMQVRFU1tQVU1QIFRSSVBd",
+              "AttributeTemplates": "http://localhost:8080/piwebapi/elementtemplates/F1ETHcyQgDhE11ixo_vJL9XDTgQUZTSU1cVEFOS0NPTlRST0xTSU1cRUxFTUVOVFRFTVBMQVRFU1tQVU1QIFRSSVBd/attributetemplates",
+              "Database": "http://localhost:8080/piwebapi/assetdatabases/F1RDcFv8ZENEXFaCjlPNxA3QtwlBMTvVlbLVKUvgCTQM3jTgQUZTSU1cVEFOS0NPTlRST0xTSU0",
+              "BaseTemplate": "http://localhost:8080/piwebapi/elementtemplates/F1ETU-2tZbi5nlC2WVrL4jmISgQUZTSU1cVEFOS0NPTlRST0xTSU1cRUxFTUVOVFRFTVBMQVRFU1tQUk9DRVNTIEVWRU5UXQ"
+            }
+          },
+          "attribute": {
+            "enable": true,
+            "name": "Duration,Source"
+          }
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "T-101 level with event frames",
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "AFSIM\\TankControlSim\\SimPlant\\U-100\\T-101;Level",
+          "elementPath": "AFSIM\\TankControlSim\\SimPlant\\U-100\\T-101",
+          "attributes": [
+            {
+              "label": "Level",
+              "value": {
+                "value": "Level",
+                "type": null
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "AFSIM",
+              "value": {
+                "value": "AFSIM",
+                "type": null,
+                "expandable": true
+              }
+            },
+            {
+              "label": "TankControlSim",
+              "value": {
+                "value": "TankControlSim",
+                "type": null,
+                "expandable": true
+              }
+            },
+            {
+              "label": "SimPlant",
+              "value": {
+                "value": "SimPlant",
+                "type": null,
+                "expandable": true
+              }
+            },
+            {
+              "label": "U-100",
+              "value": {
+                "value": "U-100",
+                "type": null,
+                "expandable": true
+              }
+            },
+            {
+              "label": "T-101",
+              "value": {
+                "value": "T-101",
+                "type": null,
+                "expandable": true
+              }
+            }
+          ],
+          "isPiPoint": false,
+          "summary": {
+            "enable": false,
+            "types": []
+          },
+          "recordedValues": {
+            "enable": false
+          },
+          "interpolate": {
+            "enable": false
+          },
+          "useUnit": {
+            "enable": true
+          },
+          "hideError": true
+        }
+      ]
+    }
+  ],
+  "tags": [
+    "simulator"
+  ],
+  "refresh": ""
+}
