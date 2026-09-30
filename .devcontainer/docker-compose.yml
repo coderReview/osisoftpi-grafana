@@ -23,7 +23,7 @@ services:
       - pisim
 
   pisim:
-    image: hshpvms/pi-webapi-simulator:1.4.1
+    image: hshpvms/pi-webapi-simulator:1.5.0
     container_name: pisim
     ports:
       - 8080:8080
