@@ -1,0 +1,1311 @@
+{
+  "uid": "sim-overview",
+  "title": "Tank level control (overview)",
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "refresh": "",
+  "annotations": {
+    "list": [
+      {
+        "name": "Pump trips",
+        "enable": true,
+        "iconColor": "red",
+        "datasource": {
+          "type": "gridprotectionalliance-osisoftpi-datasource",
+          "uid": "pisim"
+        },
+        "target": {
+          "refId": "Anno",
+          "isAnnotation": true,
+          "afServer": {
+            "WebId": "F1RScFv8ZENEXFaCjlPNxA3QtwQUZTSU0",
+            "Name": "AFSIM"
+          },
+          "database": {
+            "WebId": "F1RDcFv8ZENEXFaCjlPNxA3QtwlBMTvVlbLVKUvgCTQM3jTgQUZTSU1cVEFOS0NPTlRST0xTSU0",
+            "Name": "TankControlSim",
+            "Path": "\\\\AFSIM\\TankControlSim"
+          },
+          "template": {
+            "WebId": "F1ETHcyQgDhE11ixo_vJL9XDTgQUZTSU1cVEFOS0NPTlRST0xTSU1cRUxFTUVOVFRFTVBMQVRFU1tQVU1QIFRSSVBd",
+            "Name": "Pump Trip"
+          },
+          "showEndTime": true
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Tank level",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "AFSIM\\TankControlSim\\SimPlant\\U-100\\T-101;Level",
+          "elementPath": "AFSIM\\TankControlSim\\SimPlant\\U-100\\T-101",
+          "isPiPoint": false,
+          "attributes": [
+            {
+              "label": "Level",
+              "value": {
+                "value": "Level",
+                "expandable": false
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "AFSIM",
+              "value": {
+                "value": "AFSIM",
+                "expandable": true
+              }
+            },
+            {
+              "label": "TankControlSim",
+              "value": {
+                "value": "TankControlSim",
+                "expandable": true
+              }
+            },
+            {
+              "label": "SimPlant",
+              "value": {
+                "value": "SimPlant",
+                "expandable": true
+              }
+            },
+            {
+              "label": "U-100",
+              "value": {
+                "value": "U-100",
+                "expandable": true
+              }
+            },
+            {
+              "label": "T-101",
+              "value": {
+                "value": "T-101",
+                "expandable": true
+              }
+            }
+          ],
+          "useUnit": {
+            "enable": true
+          },
+          "digitalStates": {
+            "enable": false
+          },
+          "useLastValue": {
+            "enable": true
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 1,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^(?!Time$).*$/",
+          "values": false
+        },
+        "graphMode": "area",
+        "colorMode": "value",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Tank volume",
+      "gridPos": {
+        "x": 4,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "AFSIM\\TankControlSim\\SimPlant\\U-100\\T-101;Volume",
+          "elementPath": "AFSIM\\TankControlSim\\SimPlant\\U-100\\T-101",
+          "isPiPoint": false,
+          "attributes": [
+            {
+              "label": "Volume",
+              "value": {
+                "value": "Volume",
+                "expandable": false
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "AFSIM",
+              "value": {
+                "value": "AFSIM",
+                "expandable": true
+              }
+            },
+            {
+              "label": "TankControlSim",
+              "value": {
+                "value": "TankControlSim",
+                "expandable": true
+              }
+            },
+            {
+              "label": "SimPlant",
+              "value": {
+                "value": "SimPlant",
+                "expandable": true
+              }
+            },
+            {
+              "label": "U-100",
+              "value": {
+                "value": "U-100",
+                "expandable": true
+              }
+            },
+            {
+              "label": "T-101",
+              "value": {
+                "value": "T-101",
+                "expandable": true
+              }
+            }
+          ],
+          "useUnit": {
+            "enable": true
+          },
+          "digitalStates": {
+            "enable": false
+          },
+          "useLastValue": {
+            "enable": true
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 2,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "unit": "m3"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^(?!Time$).*$/",
+          "values": false
+        },
+        "graphMode": "area",
+        "colorMode": "value",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Inlet flow",
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "AFSIM\\TankControlSim\\SimPlant\\U-100\\T-101;Inlet Flow",
+          "elementPath": "AFSIM\\TankControlSim\\SimPlant\\U-100\\T-101",
+          "isPiPoint": false,
+          "attributes": [
+            {
+              "label": "Inlet Flow",
+              "value": {
+                "value": "Inlet Flow",
+                "expandable": false
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "AFSIM",
+              "value": {
+                "value": "AFSIM",
+                "expandable": true
+              }
+            },
+            {
+              "label": "TankControlSim",
+              "value": {
+                "value": "TankControlSim",
+                "expandable": true
+              }
+            },
+            {
+              "label": "SimPlant",
+              "value": {
+                "value": "SimPlant",
+                "expandable": true
+              }
+            },
+            {
+              "label": "U-100",
+              "value": {
+                "value": "U-100",
+                "expandable": true
+              }
+            },
+            {
+              "label": "T-101",
+              "value": {
+                "value": "T-101",
+                "expandable": true
+              }
+            }
+          ],
+          "useUnit": {
+            "enable": true
+          },
+          "digitalStates": {
+            "enable": false
+          },
+          "useLastValue": {
+            "enable": true
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 1,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^(?!Time$).*$/",
+          "values": false
+        },
+        "graphMode": "area",
+        "colorMode": "value",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Outlet flow",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "AFSIM\\TankControlSim\\SimPlant\\U-100\\T-101;Outlet Flow",
+          "elementPath": "AFSIM\\TankControlSim\\SimPlant\\U-100\\T-101",
+          "isPiPoint": false,
+          "attributes": [
+            {
+              "label": "Outlet Flow",
+              "value": {
+                "value": "Outlet Flow",
+                "expandable": false
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "AFSIM",
+              "value": {
+                "value": "AFSIM",
+                "expandable": true
+              }
+            },
+            {
+              "label": "TankControlSim",
+              "value": {
+                "value": "TankControlSim",
+                "expandable": true
+              }
+            },
+            {
+              "label": "SimPlant",
+              "value": {
+                "value": "SimPlant",
+                "expandable": true
+              }
+            },
+            {
+              "label": "U-100",
+              "value": {
+                "value": "U-100",
+                "expandable": true
+              }
+            },
+            {
+              "label": "T-101",
+              "value": {
+                "value": "T-101",
+                "expandable": true
+              }
+            }
+          ],
+          "useUnit": {
+            "enable": true
+          },
+          "digitalStates": {
+            "enable": false
+          },
+          "useLastValue": {
+            "enable": true
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 1,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^(?!Time$).*$/",
+          "values": false
+        },
+        "graphMode": "area",
+        "colorMode": "value",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Feed pump P-101",
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "AFSIM\\TankControlSim\\SimPlant\\U-100\\P-101;Status",
+          "elementPath": "AFSIM\\TankControlSim\\SimPlant\\U-100\\P-101",
+          "isPiPoint": false,
+          "attributes": [
+            {
+              "label": "Status",
+              "value": {
+                "value": "Status",
+                "expandable": false
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "AFSIM",
+              "value": {
+                "value": "AFSIM",
+                "expandable": true
+              }
+            },
+            {
+              "label": "TankControlSim",
+              "value": {
+                "value": "TankControlSim",
+                "expandable": true
+              }
+            },
+            {
+              "label": "SimPlant",
+              "value": {
+                "value": "SimPlant",
+                "expandable": true
+              }
+            },
+            {
+              "label": "U-100",
+              "value": {
+                "value": "U-100",
+                "expandable": true
+              }
+            },
+            {
+              "label": "P-101",
+              "value": {
+                "value": "P-101",
+                "expandable": true
+              }
+            }
+          ],
+          "useUnit": {
+            "enable": true
+          },
+          "digitalStates": {
+            "enable": true
+          },
+          "useLastValue": {
+            "enable": true
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "Running": {
+                  "color": "green",
+                  "index": 0
+                },
+                "Normal": {
+                  "color": "green",
+                  "index": 1
+                },
+                "Auto": {
+                  "color": "blue",
+                  "index": 2
+                },
+                "Stopped": {
+                  "color": "red",
+                  "index": 3
+                },
+                "Tripped": {
+                  "color": "red",
+                  "index": 4
+                },
+                "FailToClose": {
+                  "color": "red",
+                  "index": 5
+                },
+                "Manual": {
+                  "color": "orange",
+                  "index": 6
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^(?!Time$).*$/",
+          "values": false
+        },
+        "graphMode": "none",
+        "colorMode": "value",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Level controller mode",
+      "gridPos": {
+        "x": 20,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "AFSIM\\TankControlSim\\SimPlant\\U-100\\LIC-101;Mode",
+          "elementPath": "AFSIM\\TankControlSim\\SimPlant\\U-100\\LIC-101",
+          "isPiPoint": false,
+          "attributes": [
+            {
+              "label": "Mode",
+              "value": {
+                "value": "Mode",
+                "expandable": false
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "AFSIM",
+              "value": {
+                "value": "AFSIM",
+                "expandable": true
+              }
+            },
+            {
+              "label": "TankControlSim",
+              "value": {
+                "value": "TankControlSim",
+                "expandable": true
+              }
+            },
+            {
+              "label": "SimPlant",
+              "value": {
+                "value": "SimPlant",
+                "expandable": true
+              }
+            },
+            {
+              "label": "U-100",
+              "value": {
+                "value": "U-100",
+                "expandable": true
+              }
+            },
+            {
+              "label": "LIC-101",
+              "value": {
+                "value": "LIC-101",
+                "expandable": true
+              }
+            }
+          ],
+          "useUnit": {
+            "enable": true
+          },
+          "digitalStates": {
+            "enable": true
+          },
+          "useLastValue": {
+            "enable": true
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "Running": {
+                  "color": "green",
+                  "index": 0
+                },
+                "Normal": {
+                  "color": "green",
+                  "index": 1
+                },
+                "Auto": {
+                  "color": "blue",
+                  "index": 2
+                },
+                "Stopped": {
+                  "color": "red",
+                  "index": 3
+                },
+                "Tripped": {
+                  "color": "red",
+                  "index": 4
+                },
+                "FailToClose": {
+                  "color": "red",
+                  "index": 5
+                },
+                "Manual": {
+                  "color": "orange",
+                  "index": 6
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^(?!Time$).*$/",
+          "values": false
+        },
+        "graphMode": "none",
+        "colorMode": "value",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "T-101 level with pump trips (event frames)",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "AFSIM\\TankControlSim\\SimPlant\\U-100\\T-101;Level",
+          "elementPath": "AFSIM\\TankControlSim\\SimPlant\\U-100\\T-101",
+          "isPiPoint": false,
+          "attributes": [
+            {
+              "label": "Level",
+              "value": {
+                "value": "Level",
+                "expandable": false
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "AFSIM",
+              "value": {
+                "value": "AFSIM",
+                "expandable": true
+              }
+            },
+            {
+              "label": "TankControlSim",
+              "value": {
+                "value": "TankControlSim",
+                "expandable": true
+              }
+            },
+            {
+              "label": "SimPlant",
+              "value": {
+                "value": "SimPlant",
+                "expandable": true
+              }
+            },
+            {
+              "label": "U-100",
+              "value": {
+                "value": "U-100",
+                "expandable": true
+              }
+            },
+            {
+              "label": "T-101",
+              "value": {
+                "value": "T-101",
+                "expandable": true
+              }
+            }
+          ],
+          "useUnit": {
+            "enable": true
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "T-101 inlet and outlet flow",
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "AFSIM\\TankControlSim\\SimPlant\\U-100\\T-101;Inlet Flow;Outlet Flow",
+          "elementPath": "AFSIM\\TankControlSim\\SimPlant\\U-100\\T-101",
+          "isPiPoint": false,
+          "attributes": [
+            {
+              "label": "Inlet Flow",
+              "value": {
+                "value": "Inlet Flow",
+                "expandable": false
+              }
+            },
+            {
+              "label": "Outlet Flow",
+              "value": {
+                "value": "Outlet Flow",
+                "expandable": false
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "AFSIM",
+              "value": {
+                "value": "AFSIM",
+                "expandable": true
+              }
+            },
+            {
+              "label": "TankControlSim",
+              "value": {
+                "value": "TankControlSim",
+                "expandable": true
+              }
+            },
+            {
+              "label": "SimPlant",
+              "value": {
+                "value": "SimPlant",
+                "expandable": true
+              }
+            },
+            {
+              "label": "U-100",
+              "value": {
+                "value": "U-100",
+                "expandable": true
+              }
+            },
+            {
+              "label": "T-101",
+              "value": {
+                "value": "T-101",
+                "expandable": true
+              }
+            }
+          ],
+          "useUnit": {
+            "enable": true
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "LIC-101 level controller",
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "AFSIM\\TankControlSim\\SimPlant\\U-100\\LIC-101;PV;SP;OP",
+          "elementPath": "AFSIM\\TankControlSim\\SimPlant\\U-100\\LIC-101",
+          "isPiPoint": false,
+          "attributes": [
+            {
+              "label": "PV",
+              "value": {
+                "value": "PV",
+                "expandable": false
+              }
+            },
+            {
+              "label": "SP",
+              "value": {
+                "value": "SP",
+                "expandable": false
+              }
+            },
+            {
+              "label": "OP",
+              "value": {
+                "value": "OP",
+                "expandable": false
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "AFSIM",
+              "value": {
+                "value": "AFSIM",
+                "expandable": true
+              }
+            },
+            {
+              "label": "TankControlSim",
+              "value": {
+                "value": "TankControlSim",
+                "expandable": true
+              }
+            },
+            {
+              "label": "SimPlant",
+              "value": {
+                "value": "SimPlant",
+                "expandable": true
+              }
+            },
+            {
+              "label": "U-100",
+              "value": {
+                "value": "U-100",
+                "expandable": true
+              }
+            },
+            {
+              "label": "LIC-101",
+              "value": {
+                "value": "LIC-101",
+                "expandable": true
+              }
+            }
+          ],
+          "useUnit": {
+            "enable": true
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "type": "state-timeline",
+      "title": "Equipment states (digital states)",
+      "gridPos": {
+        "x": 12,
+        "y": 13,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "AFSIM\\TankControlSim\\SimPlant\\U-100\\P-101;Status",
+          "elementPath": "AFSIM\\TankControlSim\\SimPlant\\U-100\\P-101",
+          "isPiPoint": false,
+          "attributes": [
+            {
+              "label": "Status",
+              "value": {
+                "value": "Status",
+                "expandable": false
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "AFSIM",
+              "value": {
+                "value": "AFSIM",
+                "expandable": true
+              }
+            },
+            {
+              "label": "TankControlSim",
+              "value": {
+                "value": "TankControlSim",
+                "expandable": true
+              }
+            },
+            {
+              "label": "SimPlant",
+              "value": {
+                "value": "SimPlant",
+                "expandable": true
+              }
+            },
+            {
+              "label": "U-100",
+              "value": {
+                "value": "U-100",
+                "expandable": true
+              }
+            },
+            {
+              "label": "P-101",
+              "value": {
+                "value": "P-101",
+                "expandable": true
+              }
+            }
+          ],
+          "useUnit": {
+            "enable": true
+          },
+          "digitalStates": {
+            "enable": true
+          }
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "AFSIM\\TankControlSim\\SimPlant\\U-100\\LSHH-101;Interlock State",
+          "elementPath": "AFSIM\\TankControlSim\\SimPlant\\U-100\\LSHH-101",
+          "isPiPoint": false,
+          "attributes": [
+            {
+              "label": "Interlock State",
+              "value": {
+                "value": "Interlock State",
+                "expandable": false
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "AFSIM",
+              "value": {
+                "value": "AFSIM",
+                "expandable": true
+              }
+            },
+            {
+              "label": "TankControlSim",
+              "value": {
+                "value": "TankControlSim",
+                "expandable": true
+              }
+            },
+            {
+              "label": "SimPlant",
+              "value": {
+                "value": "SimPlant",
+                "expandable": true
+              }
+            },
+            {
+              "label": "U-100",
+              "value": {
+                "value": "U-100",
+                "expandable": true
+              }
+            },
+            {
+              "label": "LSHH-101",
+              "value": {
+                "value": "LSHH-101",
+                "expandable": true
+              }
+            }
+          ],
+          "useUnit": {
+            "enable": true
+          },
+          "digitalStates": {
+            "enable": true
+          }
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "AFSIM\\TankControlSim\\SimPlant\\U-100\\LV-101;Fail-to-Close Fault",
+          "elementPath": "AFSIM\\TankControlSim\\SimPlant\\U-100\\LV-101",
+          "isPiPoint": false,
+          "attributes": [
+            {
+              "label": "Fail-to-Close Fault",
+              "value": {
+                "value": "Fail-to-Close Fault",
+                "expandable": false
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "AFSIM",
+              "value": {
+                "value": "AFSIM",
+                "expandable": true
+              }
+            },
+            {
+              "label": "TankControlSim",
+              "value": {
+                "value": "TankControlSim",
+                "expandable": true
+              }
+            },
+            {
+              "label": "SimPlant",
+              "value": {
+                "value": "SimPlant",
+                "expandable": true
+              }
+            },
+            {
+              "label": "U-100",
+              "value": {
+                "value": "U-100",
+                "expandable": true
+              }
+            },
+            {
+              "label": "LV-101",
+              "value": {
+                "value": "LV-101",
+                "expandable": true
+              }
+            }
+          ],
+          "useUnit": {
+            "enable": true
+          },
+          "digitalStates": {
+            "enable": true
+          }
+        }
+      ],
+      "options": {
+        "showValue": "never",
+        "rowHeight": 0.8,
+        "mergeValues": true,
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "Running": {
+                  "color": "green",
+                  "index": 0
+                },
+                "Normal": {
+                  "color": "green",
+                  "index": 1
+                },
+                "Auto": {
+                  "color": "blue",
+                  "index": 2
+                },
+                "Stopped": {
+                  "color": "red",
+                  "index": 3
+                },
+                "Tripped": {
+                  "color": "red",
+                  "index": 4
+                },
+                "FailToClose": {
+                  "color": "red",
+                  "index": 5
+                },
+                "Manual": {
+                  "color": "orange",
+                  "index": 6
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "tags": [
+    "simulator"
+  ]
+}
