@@ -1,0 +1,207 @@
+{
+  "uid": "sim-variable-queries",
+  "title": "Variable queries",
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "tags": [
+    "simulator"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "equipment",
+        "label": "Equipment (elements, full hierarchy, by template)",
+        "type": "query",
+        "datasource": {
+          "type": "gridprotectionalliance-osisoftpi-datasource",
+          "uid": "pisim"
+        },
+        "query": {
+          "refId": "A",
+          "query": "elements AFSIM\\TankControlSim searchFullHierarchy=true templateName=Pump"
+        },
+        "definition": "elements AFSIM\\TankControlSim searchFullHierarchy=true templateName=Pump",
+        "refresh": 1,
+        "multi": false,
+        "includeAll": false,
+        "current": {}
+      },
+      {
+        "name": "unit",
+        "label": "Child elements of U-100",
+        "type": "query",
+        "datasource": {
+          "type": "gridprotectionalliance-osisoftpi-datasource",
+          "uid": "pisim"
+        },
+        "query": {
+          "refId": "A",
+          "query": "elements AFSIM\\TankControlSim\\SimPlant\\U-100 sortOrder=Descending"
+        },
+        "definition": "elements AFSIM\\TankControlSim\\SimPlant\\U-100 sortOrder=Descending",
+        "refresh": 1,
+        "multi": true,
+        "includeAll": false,
+        "current": {}
+      },
+      {
+        "name": "attribute",
+        "label": "Double attributes of the selected element",
+        "type": "query",
+        "datasource": {
+          "type": "gridprotectionalliance-osisoftpi-datasource",
+          "uid": "pisim"
+        },
+        "query": {
+          "refId": "A",
+          "query": "attributes AFSIM\\TankControlSim\\SimPlant\\U-100\\$unit valueType=Double sortOrder=Descending"
+        },
+        "definition": "attributes AFSIM\\TankControlSim\\SimPlant\\U-100\\$unit valueType=Double sortOrder=Descending",
+        "refresh": 1,
+        "multi": false,
+        "includeAll": false,
+        "current": {}
+      },
+      {
+        "name": "point",
+        "label": "PI points (points P-101*)",
+        "type": "query",
+        "datasource": {
+          "type": "gridprotectionalliance-osisoftpi-datasource",
+          "uid": "pisim"
+        },
+        "query": {
+          "refId": "A",
+          "query": "points P-101*"
+        },
+        "definition": "points P-101*",
+        "refresh": 1,
+        "multi": true,
+        "includeAll": false,
+        "current": {}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "$unit | $attribute",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "AFSIM\\TankControlSim\\SimPlant\\U-100\\$unit;$attribute",
+          "elementPath": "AFSIM\\TankControlSim\\SimPlant\\U-100\\$unit",
+          "isPiPoint": false,
+          "attributes": [
+            {
+              "label": "$attribute",
+              "value": {
+                "value": "$attribute",
+                "expandable": false
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "AFSIM",
+              "value": {
+                "value": "AFSIM",
+                "expandable": true
+              }
+            },
+            {
+              "label": "TankControlSim",
+              "value": {
+                "value": "TankControlSim",
+                "expandable": true
+              }
+            },
+            {
+              "label": "SimPlant",
+              "value": {
+                "value": "SimPlant",
+                "expandable": true
+              }
+            },
+            {
+              "label": "U-100",
+              "value": {
+                "value": "U-100",
+                "expandable": true
+              }
+            },
+            {
+              "label": "$unit",
+              "value": {
+                "value": "$unit",
+                "expandable": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "PI points: $point",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "gridprotectionalliance-osisoftpi-datasource",
+        "uid": "pisim"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "gridprotectionalliance-osisoftpi-datasource",
+            "uid": "pisim"
+          },
+          "target": "PISIM;$point",
+          "isPiPoint": true,
+          "attributes": [
+            {
+              "label": "$point",
+              "value": {
+                "value": "$point",
+                "expandable": false
+              }
+            }
+          ],
+          "segments": [
+            {
+              "label": "PISIM",
+              "value": {
+                "value": "PISIM",
+                "expandable": false
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

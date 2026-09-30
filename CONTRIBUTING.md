@@ -10,7 +10,7 @@
 
 Open a codespace on this repository (Code → Codespaces, or https://codespaces.new/GridProtectionAlliance/osisoftpi-grafana).
 It builds the plugin and starts Grafana with the PI Web API simulator (`.devcontainer`); Grafana opens in the browser
-with example dashboards in the "PI Web API simulator" folder.
+with example dashboards in the "PI Web API simulator" folder (streaming, variable queries, annotations, ...).
 
 - `.devcontainer/build.sh` rebuilds the plugin after a change and restarts Grafana.
 - `GRAFANA_VERSION=11.6.0 .devcontainer/start.sh` switches the Grafana version.
