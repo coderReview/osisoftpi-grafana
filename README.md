@@ -16,7 +16,9 @@ Create a new instance of the data source from the Grafana Data Sources administr
 
 - **URL**: the PI Web API endpoint, e.g. `https://server/piwebapi`.
 - **Authentication**: PI Web API usually needs "Basic" authentication enabled; enter its credentials here. Custom HTTP
-  headers (e.g. an `Authorization` header) are also supported. **Timeout** applies to every PI Web API request.
+  headers (e.g. a static `Authorization` header) and TLS client certificates are also supported, and "Forward OAuth
+  Identity" and "Allowed cookies" pass the Grafana user's token or cookies to PI Web API. Kerberos and NTLM are not
+  supported. **Timeout** applies to every PI Web API request.
 - **Max Cache Time**: how long the WebIDs of PI points and attributes are cached (12 hours by default).
 - **Enable PI Points in Query**: allows queries of PI points (PI Data Archive) in addition to AF attributes.
 - **Enable New Data Format**: series are named after the attribute or point, with `element`, `database`, `path`,
@@ -25,6 +27,10 @@ Create a new instance of the data source from the Grafana Data Sources administr
 - **Enable Streaming Support**: allows live streaming (see [Live streaming](#live-streaming)).
 - **PI Server, AF Server, AF Database**: the defaults of the query editor. They are pre-selected, and cannot be
   changed, in annotations, and are used by variable queries without a server or database.
+- **Enable Experimental Features > Enable Response Cache**: when a PI Web API request fails, the last successful
+  response of the same query is shown instead of the error, with its last value extended to the end of the time range.
+  The cache is shared by all users of the datasource: do not enable it with "Forward OAuth Identity" or forwarded
+  cookies when users may see different PI data, as one user could then be shown another user's cached response.
 
 NOTE: If you are using PI Vision (PI-Coresight), it is recommended to create a separate instance of PI Web API for use
 with this plugin. See the [PI Web API documentation](https://docs.aveva.com/bundle/pi-web-api) for more information on
@@ -45,19 +51,23 @@ Query options:
 
 | Option | Description |
 | --- | --- |
-| Calculation | PI Web API expression applied to every attribute, e.g. `'.' * 2` (`'.'` is the attribute). Without attributes, the expression is calculated on the element. |
+| Calculation | PI Web API expression applied to every attribute, e.g. `'.' * 2` (`'.'` is the attribute or point). |
 | Use Last Value | Only the value at the end of the time range. `Ignore end time` returns the last value of the stream instead. |
 | Digital States | Shows digital state names instead of their codes. |
-| Replace Bad Data | Replacement of bad values (e.g. `Shutdown`, `Calc Failed`): `Null`, `Drop`, `Previous`, `0` or `Keep`. |
+| Replace Bad Data | Replacement of bad values (e.g. `Shutdown`, `Calc Failed`): `Null`, `Drop`, `Previous`, `0` or `Keep` (the bad value itself: the state name in text series and with Digital States, its code in numeric series). |
 | Use unit from datapoints | Adds the unit of the point or attribute to the series (requires "Enable Unit From Data"). |
 | Interpolate | Interpolated values every `Interpolate Period` (default: time range / panel width). |
-| Recorded Values | Values as recorded in PI, up to `Max Recorded Values`, with the given `Boundary Type` (default `Inside`). |
+| Recorded Values | Values as recorded in PI, up to `Max Recorded Values` (default 1000), with the given `Boundary Type` (default `Inside`). |
 | Summary | Summary values (`Average`, `Maximum`, ...) per `Summary Period`, with the `Summary Basis` of PI Web API. |
 | Enable Streaming | Live values, see [Live streaming](#live-streaming). |
-| Display Name | Name of the series. With `Enable Regex Replace`, the name is changed with a regular expression (`Search`, `Replace`). |
+| Display Name | Name of the series; multi-value variables are replaced with the values of each series, e.g. `${element} ${attribute}`. With `Enable Regex Replace`, the name is changed with a regular expression (`Search`, `Replace`). |
 | Ignore API Error? | Errors of PI Web API are not shown in the panel. |
 
-Without Interpolate, Recorded Values or Summary, the plot values of PI Web API are returned, sized to the panel width.
+Without Interpolate, Recorded Values or Summary, the plot values of PI Web API are returned, sized to the panel width
+(with a calculation: the calculated values at each recorded event).
+
+Interpolate Period, Summary Period and Sample Interval are PI Web API time spans, sent as entered: e.g. `30s`, `5m`,
+`1h30m`, `1.5d`, `2 hours`. An invalid value returns PI Web API's error.
 
 ## Querying via the PI Dataserver (PI Points)
 
@@ -81,8 +91,11 @@ The query returns the values of the time range, and new values are then added to
 
 - PI Web API channels send raw values, so "Enable Streaming" is only offered for queries without a calculation,
   "Use Last Value", "Interpolate", "Recorded Values" or a summary. While streaming is enabled, these options are hidden.
-- The WebSocket connection uses the datasource's basic authentication and custom HTTP headers, and its "Timeout"
-  (30 seconds when not set). Other authentication methods (e.g. Kerberos) are not supported for streaming.
+- The WebSocket connection uses the datasource's authentication (basic authentication, custom HTTP headers), TLS
+  settings and "Timeout" (30 seconds when not set).
+- Live values are added only when the time range ends at "now" (e.g. "Last 6 hours"). Each query result has its own
+  live channel, so a refresh or a new time range starts from the new result, and saving the datasource settings does
+  not stop running panels.
 - When PI Web API is unavailable, streaming resumes by itself once it is back. With "Fill gaps after reconnect" (on by
   default), the values recorded in the meantime are then added to the panel, up to the query's maximum data points;
   when it is off, or for attributes without recorded values, they are shown at the next refresh of the panel.
@@ -136,7 +149,7 @@ Multi-value variables (and the `All` option) are expanded into one series for ev
   Every combination of the selected values is queried.
 - A variable used as an attribute (e.g. `${attribute}`) or as a PI point name expands into one attribute or point per value.
 - Element and attribute variables are combined, so `${site}` (2 values) x `${unit}` (2 values) x `${attribute}` (2 values) returns 8 series.
-- When the element path uses more than one variable, series are named after the element path below the database and the attribute, e.g. `SiteA\Unit2\Pump|Temperature`. With "Enable New Data Format", AF series have `database` and `path` (element path below the database) labels.
+- Without "Enable New Data Format", when the element path uses more than one variable, series are named after the element path below the database and the attribute, e.g. `SiteA\Unit2\Pump|Temperature`. With "Enable New Data Format", series keep the attribute name and have `database` and `path` (element path below the database) labels; use them in the legend, e.g. `{{path}}`.
 - A single query can expand into at most 1000 element/attribute combinations; larger expansions return an error.
 
 Variables with a custom `All` value are sent as that value and are not expanded.
@@ -163,12 +176,15 @@ Add an annotation query with this datasource:
 
 # Installation
 
-Install using the grafana-cli or clone the repository directly
-into your Grafana plugin directory.
+Install the plugin from the Grafana plugin catalog (Administration > Plugins and data > Plugins), or with the Grafana
+CLI:
 
 ```
-grafana-cli plugins install gridprotectionalliance-osisoftpi-datasource
+grafana cli plugins install gridprotectionalliance-osisoftpi-datasource
 ```
+
+The signed plugin zip is also attached to each [GitHub release](https://github.com/GridProtectionAlliance/osisoftpi-grafana/releases):
+unzip it into the Grafana plugins directory. To build the plugin from source, see [CONTRIBUTING.md](https://github.com/GridProtectionAlliance/osisoftpi-grafana/blob/master/CONTRIBUTING.md).
 
 # Trademarks
 
