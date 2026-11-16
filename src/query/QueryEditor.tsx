@@ -690,9 +690,14 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
       path: this.getSegmentPathUpTo(segments.slice(0), segments.length),
       type: 'attributes',
     };
+    const generation = this.loadGeneration;
+    const current = () => generation === this.loadGeneration;
     return datasource
       .metricFindQuery(findQuery, Object.assign(data?.request?.scopedVars ?? {}, { isPiPoint: false }))
       .then((attributesResponse: any) => {
+        if (!current()) {
+          return;
+        }
         const availableAttributes: any = {};
         each(attributesResponse, (attribute: any) => {
           availableAttributes[attribute.Path.substring(attribute.Path.indexOf('|') + 1)] = attribute.WebId;
@@ -701,10 +706,13 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
         this.setError(undefined);
       })
       .catch((err: any) => {
+        if (!current()) {
+          return;
+        }
         this.availableAttributes = {};
         this.setError(err);
       })
-      .then(() => this.attributeChangeValue(attributes));
+      .then(() => (current() ? this.attributeChangeValue(attributes) : undefined));
   }
 
   /** Shows the error of a failed PI Web API lookup, or clears it. */
@@ -872,6 +880,7 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
     isPiPoint: boolean,
     cb?: (() => void) | undefined
   ) => {
+    const generation = this.loadGeneration;
     this.setState(
       {
         segments: segmentsArray,
@@ -884,7 +893,8 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
           ? Promise.resolve()
           : this.checkAttributeSegments(attributesArray, this.state.segments);
         loaded.then(() => {
-          if (cb) {
+          // a lookup that answers after the query was switched (e.g. to PI points) must not restore the old query
+          if (cb && generation === this.loadGeneration) {
             cb();
           }
         });
@@ -894,6 +904,9 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
 
   // React action when component is initialized/updated
   scopedVarsDone = false;
+  // loadGeneration changes when the editor loads the query and when "Is Pi Point?" changes: the PI Web API lookups
+  // started before are then out of date, and their late answers are ignored
+  loadGeneration = 0;
   componentDidMount = () => {
     this.initialLoad(false);
   };
@@ -907,6 +920,7 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
   };
 
   initialLoad = (force: boolean) => {
+    const generation = ++this.loadGeneration;
     const migrated = migrateQuery(this.props.query);
     const query = migrated === this.props.query ? migrated : this.withVersion(migrated);
     if (query !== this.props.query) {
@@ -926,7 +940,9 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
         // Build query from target
         this.buildFromTarget(query, segmentsArray, attributesArray)
           .then((_segmentsArray) => {
-            this.updateArray(_segmentsArray, attributesArray, summariesArray, false);
+            if (generation === this.loadGeneration) {
+              this.updateArray(_segmentsArray, attributesArray, summariesArray, false);
+            }
           })
           .catch((e) => console.error(e));
         return;
@@ -1006,6 +1022,7 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
   onIsPiPointChange = (event: React.SyntheticEvent<HTMLInputElement>) => {
     const { query: queryChange } = this.props;
     const isPiPoint = !queryChange.isPiPoint;
+    this.loadGeneration++; // the lookups of the other mode are out of date
     this.piServer = isPiPoint ? this.checkPiServer().filter((s) => s.label) : [];
     this.setState(
       {

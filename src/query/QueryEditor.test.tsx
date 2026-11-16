@@ -211,6 +211,32 @@ describe('PIWebAPIQueryEditor', () => {
       });
     });
 
+    it('is kept when the attribute lookup of the opened query answers after the switch', async () => {
+      // the attribute lookup started when the editor opens is still pending when the switch is clicked
+      const pending: Array<(value: unknown) => void> = [];
+      const datasource = createDatasource({
+        metricFindQuery: jest.fn((query: any) =>
+          query.type === 'attributes' ? new Promise((resolve) => pending.push(resolve)) : Promise.resolve([])
+        ),
+      });
+      const { onChange, rerender } = await renderEditor(afQuery(), datasource);
+      expect(pending.length).toBeGreaterThan(0);
+
+      fireEvent.click(screen.getAllByRole('switch')[0]);
+      await settle();
+      const switched = lastQuery(onChange);
+      expect(switched).toMatchObject({ isPiPoint: true, attributes: [] });
+      await rerender({ query: switched }); // Grafana passes the changed query back
+
+      // the lookup answers late, with the attributes of the AF element
+      await act(async () => pending.forEach((resolve) => resolve([{ Path: '\\\\AFSIM\\TankControlSim|Level', WebId: 'w' }])));
+      await settle();
+
+      expect(lastQuery(onChange)).toMatchObject({ isPiPoint: true, attributes: [], target: 'PISIM;' });
+      expect(screen.getByText('PI Server')).toBeInTheDocument();
+      expect(screen.queryByText('AF Elements')).not.toBeInTheDocument();
+    });
+
     it('switches from the raw query of a PI point query to the visual editor', async () => {
       const query = { ...piQuery(), rawQuery: true, query: 'PISIM;T-101.Level' };
       const { ref, onChange } = await renderEditor(query);
