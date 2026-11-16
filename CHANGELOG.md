@@ -6,7 +6,7 @@
 - Logs that can be filtered and counted (e.g. in Loki): each line has a fixed event name (e.g. `query_target_failed`), one field per value, and errors and warnings have an error type (`not_found`, `auth`, `piwebapi_unreachable`, `response_decode`, …) and source (`plugin` or `downstream`); the lines of a query name its dashboard and panel, datasource and user. Responses and values are logged as short excerpts instead of whole objects, and cancelled queries are not logged as errors - see docs/logging.md
 - A PI Web API response that the plugin cannot read now fails the query target with an error, instead of returning an empty series
 - Fixed "Is Pi Point?" switching back to AF elements when it was changed while the editor was still loading the attributes of the opened query
-- Added live streaming of PI point and AF attribute values through PI Web API channels (WebSocket) - issue GridProtectionAlliance/osisoftpi-grafana#206 (thanks to Michael Bohan, @mbtx2)
+- Added live streaming of PI point and AF attribute values through PI Web API channels (WebSocket) - issues GridProtectionAlliance/osisoftpi-grafana#99 and GridProtectionAlliance/osisoftpi-grafana#206 (thanks to Michael Bohan, @mbtx2)
   - enabled with "Enable Streaming Support" in the datasource configuration and "Enable Streaming" in the query, optionally controlled by a dashboard variable
   - streamed values follow the query settings (Replace Bad Data, Digital States, units); queries with a calculation, a summary, "Use Last Value", "Interpolate" or "Recorded Values" are not streamed, and the query editor only offers streaming, as the last option row, when none is selected
   - streaming resumes by itself after PI Web API was unavailable, and "Fill gaps after reconnect" (on by default) adds the values recorded in the meantime; connections time out after the datasource "Timeout"
@@ -15,7 +15,6 @@
 - Annotation query editor: the AF server is selected in a new dropdown, and the category is a dropdown of the database categories (element categories, also used by event frames); the AF server and database set in the datasource configuration are pre-selected and cannot be changed
 - Variable queries use a query language: `points PIT-*`, `elements AFSERVER\Database\Plant searchFullHierarchy=true templateName=Pump`, `attributes AFSERVER\Database\Element nameFilter=Fl*` with the PI Web API filters (`nameFilter`, `descriptionFilter`, `categoryName`, `templateName`, `elementType`, `valueType`) and paging (`sortField`, `sortOrder`, `startIndex`, `maxCount`), shown with its help in a new variable query editor; JSON queries of earlier versions keep working
 - Rebuilt the plugin with current Grafana tooling to fix it failing to load on Grafana 12.3 and later - issue GridProtectionAlliance/osisoftpi-grafana#197
-- Built with the Grafana 13.1 libraries, @grafana/plugin-ui 0.17.4, Go 1.27.3 and grafana-plugin-sdk-go 0.297.0; Grafana 11.6.0 or later is still required
 - Fixed units from PI not being added to data frames when "Enable Unit From Data" and "Use unit from datapoints" are enabled - issue GridProtectionAlliance/osisoftpi-grafana#208
 - Improved template variables support - issue GridProtectionAlliance/osisoftpi-grafana#187
   - more than one multi-value variable can be used in the element path; every combination is queried
@@ -30,12 +29,13 @@
 - Annotations: variables are replaced in the name filter, category and attribute name again (lost in 5.0); attributes missing on some event frames or matched by a wildcard no longer fail the query, and digital states show their name
 - Annotations report PI Web API errors per query instead of an empty result or a generic plugin error; the annotation editor keeps a saved database that differs from the configured one
 - "Forward OAuth Identity" and "Allowed cookies" are now passed to PI Web API
+- The configuration page no longer offers the "Browser" access mode, which never worked: the plugin always queries PI Web API from the Grafana server - issue GridProtectionAlliance/osisoftpi-grafana#193
 - A Max Cache Time with decimals (or saved as text by provisioning) no longer breaks the datasource; it is rounded up to whole hours
 - Fixed queries whose name (RefID) contains a dot, bracket, quote or space failing until the WebID was cached
 - A batch request sent on a keep-alive connection that PI Web API (or a proxy) has just closed is sent again instead of failing the panel with `EOF` or "connection reset"
 - Recorded values return up to 1000 values by default (PI Web API's default) instead of the panel's maximum data points
 - Interpolate Period, Summary Period and Sample Interval are sent as entered, so every PI Web API time span works (e.g. `1h30m`, `1.5d`, `2 hours`); unknown values were silently replaced by `30s`
-- Fixed calculations without values in the time range failing every query of the request; calculation + summary returns one series per summary type, and calculation and summary values take the type of their values
+- Fixed calculations without values in the time range failing every query of the request; calculation + summary returns one series per summary type, and calculation and summary values take the type of their values - issue GridProtectionAlliance/osisoftpi-grafana#190
 - "Replace Bad Data" = Keep keeps the bad value (state name or code) instead of behaving like `0`; AF attributes of type Byte and Blob return their values
 - The query editor no longer drops saved attributes that the first element of a multi-value variable does not have, and shows failed lookups
 - Fixed backend panics on queries without the optional `recordedValues` or `summary` settings, and on an invalid regex - issue GridProtectionAlliance/osisoftpi-grafana#209
@@ -60,12 +60,11 @@
 - Fixed the plugin stopping with "concurrent map writes" when the WebID cache was cleaned during queries, the WebID cache growing without limit, and the cache cleanup continuing after the datasource settings changed
 - With the new data format, summary series have a `summaryType` label; the summary type was added to the `type` label instead (e.g. `Double" summaryType="Average`)
 - Targets written with a leading `\\` (e.g. `\\AFServer\Database\Element;Attribute`) in raw queries or saved dashboards are sent without it, as the backend adds it; with the new data format, their PI points had an empty `element` label
-- Each failing target is logged once with its RefID, target, status, error and the PI Web API requests sent for it (the raw error response is logged at debug level)
+- Each failing target is logged once (`query_target_failed`) with its RefID, target, error type, status, error and the PI Web API requests sent for it, instead of the whole query
 - Fewer lookups and allocations per query: no batch request is sent when every query is invalid, and the WebID metadata is read once per series
 - Minimum supported Grafana version is now 11.6.0; tested against Grafana 11.6, 12.x and 13.x
 - Updated plugin scaffolding to `@grafana/create-plugin` 7.11 (dynamic public path, subresource integrity, ESLint 9)
-- Updated frontend packages to `@grafana/*` 12.x
-- Updated backend to `grafana-plugin-sdk-go` v0.296.5 (requires Go 1.26)
+- Updated frontend packages to `@grafana/*` 13.1 and `@grafana/plugin-ui` 0.17.4, and the backend to `grafana-plugin-sdk-go` v0.297.0 (requires Go 1.27)
 - Replaced deprecated `LegacyForms` fields in the configuration page
 - Replaced deprecated `DataSourceHttpSettings` with `@grafana/plugin-ui` connection, authentication and advanced HTTP settings
 - Replaced deprecated `AsyncSelect` with `Combobox` in the annotations editor
