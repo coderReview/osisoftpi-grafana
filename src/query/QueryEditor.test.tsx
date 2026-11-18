@@ -163,6 +163,22 @@ describe('PIWebAPIQueryEditor', () => {
       expect(options.filter((o) => o.label === 'P-101.Flow')).toHaveLength(1);
     });
 
+    it('reads the PI points from the target of a query without attributes', async () => {
+      // e.g. a provisioned dashboard or a query written by hand, with the target only
+      const query = { refId: 'A', target: 'PISIM;T-101.Level;${point}', isPiPoint: true } as unknown as PIWebAPIQuery;
+      const { onChange } = await renderEditor(query);
+
+      expect(onChange).toHaveBeenCalled();
+      for (const [changed] of onChange.mock.calls) {
+        expect(changed.target).toBe('PISIM;T-101.Level;${point}');
+      }
+      expect(lastQuery(onChange).attributes.map((a: any) => a.value)).toEqual([
+        { type: undefined, value: 'T-101.Level', expandable: false },
+        { type: 'template', value: '${point}', expandable: false },
+      ]);
+      expect(screen.getByText('T-101.Level')).toBeInTheDocument();
+    });
+
     it('offers the remove option first without typed text', async () => {
       const { ref } = await renderEditor(piQuery());
 

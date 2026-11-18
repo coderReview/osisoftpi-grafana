@@ -47,6 +47,19 @@ const toSegmentItem = (item: SelectableValue<PIWebAPISelectableValue>): Selectab
   };
 };
 
+/** The attribute (or PI point) segments of the attribute names of a target, e.g. `Level;${attr}`. */
+const targetAttributes = (names: string[]): Array<SelectableValue<PIWebAPISelectableValue>> =>
+  names
+    .filter((name) => name !== '')
+    .map((name) => ({
+      label: name,
+      value: {
+        type: name.match(/\${\w+}/gi) ? 'template' : undefined,
+        value: name,
+        expandable: false,
+      },
+    }));
+
 const CustomLabelComponent = (props: any) => {
   if (props.value) {
     return (
@@ -619,19 +632,7 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
           },
         });
       });
-      each(splitAttributes, (item, _) => {
-        if (item !== '') {
-          // set current value
-          attributesArray.push({
-            label: item,
-            value: {
-              type: item.match(/\${\w+}/gi) ? 'template' : undefined,
-              value: item,
-              expandable: false,
-            },
-          });
-        }
-      });
+      attributesArray.push(...targetAttributes(splitAttributes));
       return this.getElementSegments(splitElements.length + 1, segmentsArray).then((elements) => {
         if (elements.length > 0) {
           segmentsArray.push({
@@ -762,18 +763,7 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
           },
         });
       });
-      each(splitAttributes, function (item, index) {
-        if (item !== '') {
-          attributes.push({
-            label: item,
-            value: {
-              type: item.match(/\${\w+}/gi) ? 'template' : undefined,
-              value: item,
-              expandable: false,
-            },
-          });
-        }
-      });
+      attributes = targetAttributes(splitAttributes);
       this.getElementSegments(splitElements.length + 1, segments)
         .then((elements) => {
           if (elements.length > 0) {
@@ -954,9 +944,15 @@ export class PIWebAPIQueryEditor extends PureComponent<Props, State> {
         segmentsArray = this.checkPiServer();
       }
       this.piServer = segmentsArray.filter((s) => s.label);
+      if (!query.attributes?.length && query.target) {
+        // a query with the target only (provisioned, written by hand or sent through the API): read its PI points,
+        // or the target would be rebuilt without them
+        attributesArray = targetAttributes(query.target.split(';').slice(1));
+      }
     }
+    const opened = attributesArray.length && !query.attributes?.length ? { ...query, attributes: attributesArray } : query;
     this.updateArray(segmentsArray, attributesArray, summariesArray, !!isPiPoint, () => {
-      this.onChange(query, false);
+      this.onChange(opened, false);
     });
   };
 
